@@ -14,7 +14,7 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: ['https://umarquranacademy.onrender.com', 'http://localhost:3000'],
+    origin: ['https://umarquranacademy-frontend.onrender.com', 'http://localhost:3000'],
     credentials: true,
   });
 

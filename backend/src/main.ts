@@ -7,17 +7,17 @@ async function bootstrap() {
 
   app.use(
     session({
-      secret: 'supersecretkey', 
+      secret: process.env.JWT_SECRET,
       resave: false,
       saveUninitialized: false,
     }),
   );
 
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: ['https://umarquranacademy.onrender.com', 'http://localhost:3000'],
     credentials: true,
   });
 
-  await app.listen(3001);
+  await app.listen(process.env.PORT || 3001);
 }
 bootstrap();

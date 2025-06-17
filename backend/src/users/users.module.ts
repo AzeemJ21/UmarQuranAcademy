@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './user.schema';
 import { JwtModule } from '@nestjs/jwt';           // Import JwtModule
 import { RolesGuard } from '../auth/roles.guard';  // Import RolesGuard
+import { MailModule } from 'src/mail/mail.module';
 
 @Module({
   imports: [
@@ -13,9 +14,12 @@ import { RolesGuard } from '../auth/roles.guard';  // Import RolesGuard
       secret: process.env.JWT_SECRET || 'supersecretkey', // apna JWT secret yahan rakhain
       signOptions: { expiresIn: '1d' },                  // token expiration
     }),
+    MailModule,
   ],
-  providers: [UsersService, RolesGuard],  // RolesGuard yahan add karo
+  providers: [UsersService, RolesGuard ],  // RolesGuard yahan add karo
   controllers: [UsersController],
-  exports: [UsersService],
+  exports: [UsersService,
+    MongooseModule
+  ],
 })
 export class UsersModule {}

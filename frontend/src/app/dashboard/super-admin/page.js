@@ -26,6 +26,8 @@ import CreateGroupForm from '@/components/CreateGroup';
 import AdminGroupList from '@/components/AdminGroupList';
 import LogoutButton from '@/components/LogoutButton';
 import useAuthRedirect from '@/hooks/useAuthRedirect';
+import OnlineUsers from '@/components/OnlineUsers';
+import SuperAdminGroupList from '@/components/SuperGroupList';
 
 export default function SuperAdminDashboard() {
   useAuthRedirect();
@@ -99,9 +101,10 @@ export default function SuperAdminDashboard() {
     { name: 'Mark Attendance', icon: <FaCalendarCheck color="#E91E63" />, key: 'mark-attendance' },
     { name: 'Check Attendance', icon: <FaCalendarAlt color="#00BCD4" />, key: 'check-attendance' },
     { name: 'Create Group', icon: <FaCog color="#795548" />, key: 'craete-group' },
+    { name: 'Online User', icon: <FaCalendarAlt color="#00BCD4" />, key: 'onlineuser' },
     { name: 'Group List', icon: <FaCalendarAlt color="#00BCD4" />, key: 'group-list' },
     { name: 'Settings', icon: <FaCog color="#795548" />, key: 'settings' },
-    { name: 'Logout', icon: <FaSignOutAlt color="#F44336" />, key: 'logout' },
+    
   ];
 
 
@@ -180,7 +183,7 @@ export default function SuperAdminDashboard() {
       )}
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto p-10 bg-gradient-to-br from-[#f0f4f3] to-[#e6ebe9] text-[#2E4D3B]">
+      <main className="flex-1 overflow-y-auto p-10 bg-white text-[#2E4D3B]">
         <AnimatePresence mode="wait">
           {active === 'dashboard' && (
             <motion.div
@@ -190,10 +193,23 @@ export default function SuperAdminDashboard() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.4 }}
             >
-              <div className="mb-10">
-                <h1 className="text-3xl sm:text-4xl font-bold text-[#2E4D3B] mb-2">Welcome, Super Admin!</h1>
-                <p className="text-gray-600">Manage your platform from here.</p>
+              <div className='flex justify-between items-center'>
+                <div className="mb-10">
+                  <h1 className="text-3xl sm:text-4xl font-bold text-[#2E4D3B] mb-2">Welcome, Super Admin!</h1>
+                  <p className="text-gray-600">Manage your platform from here.</p>
+                </div>
+
+                {/* Logout button hidden on mobile */}
+                <div className="mb-10 hidden sm:block">
+                  <button
+                    onClick={handleLogout}
+                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow transition"
+                  >
+                    Logout
+                  </button>
+                </div>
               </div>
+
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-12">
                 <StatCard title="Total Users" value={totalUsers.toString()} />
@@ -300,70 +316,60 @@ export default function SuperAdminDashboard() {
           )}
 
           {active === 'assignStudents' && (
-            <motion.div key="assignStudents" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }} className="bg-white p-6 rounded-lg shadow-lg">
+            <motion.div key="assignStudents" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }} className="bg-white rounded-lg shadow-lg">
               <AssignStudent />
             </motion.div>
           )}
 
           {active === 'assignHomework' && (
-            <motion.div key="assignHomework" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }} className="bg-white p-6 rounded-lg shadow-lg">
+            <motion.div key="assignHomework" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }} className="bg-white rounded-lg shadow-lg">
               <AssignHomeworkForm />
             </motion.div>
           )}
 
           {active === 'assignedHomework' && (
-            <motion.div key="assignedHomework" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }} className="bg-white p-6 rounded-lg shadow-lg">
+            <motion.div key="assignedHomework" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }} className="bg-white rounded-lg shadow-lg">
               <HomeworkDashboard />
             </motion.div>
           )}
 
           {active === 'mark-attendance' && (
-            <motion.div key="mark-attendance" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }} className="bg-white p-6 rounded-lg shadow-lg">
+            <motion.div key="mark-attendance" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }} className="bg-white rounded-lg shadow-lg">
               <AttendanceForm />
             </motion.div>
           )}
 
           {active === 'check-attendance' && (
-            <motion.div key="check-attendance" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }} className="bg-white p-6 rounded-lg shadow-lg">
+            <motion.div key="check-attendance" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }} className="bg-white rounded-lg shadow-lg">
               <AttendancePage />
             </motion.div>
           )}
 
           {active === 'craete-group' && (
-            <motion.div key="craete-group" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }} className="bg-white p-6 rounded-lg shadow-lg">
+            <motion.div key="craete-group" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }} className="bg-white rounded-lg shadow-lg">
               <CreateGroupForm />
             </motion.div>
           )}
 
           {active === 'group-list' && (
-            <motion.div key="group-list" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }} className="bg-white p-6 rounded-lg shadow-lg">
-              <AdminGroupList />
+            <motion.div key="group-list" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }} className="bg-white rounded-lg shadow-lg">
+              <SuperAdminGroupList/>
             </motion.div>
           )}
 
           {active === 'settings' && (
             <motion.p key="settings" className="text-xl text-[#2E4D3B]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
-              Settings Coming Soon...
-            </motion.p>
+              <LogoutButton />
+              </motion.p>
           )}
 
-          {active === 'logout' && (
-            <motion.div
-              key="logout"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.4 }}
-              className="flex justify-center mt-10"
-            >
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow transition"
-              >
-                Logout
-              </button>
-            </motion.div>
+          {active === 'onlineuser' && (
+            <motion.p key="onlineuser" className="text-xl text-[#2E4D3B]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
+              <OnlineUsers/>
+              </motion.p>
           )}
+
+
 
         </AnimatePresence>
       </main>

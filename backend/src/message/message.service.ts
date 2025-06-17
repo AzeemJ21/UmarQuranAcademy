@@ -1,4 +1,3 @@
-// src/message/message.service.ts
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
@@ -11,57 +10,58 @@ export class MessageService {
   constructor(
     @InjectModel(Message.name) private messageModel: Model<Message>,
     private groupService: GroupService,
-  ) { }
+  ) {}
 
-  async createMessage(data: { sender: string | Types.ObjectId; group: string | Types.ObjectId; text: string }) {
-  const message = await this.messageModel.create(data);
-  return message.populate('sender', 'name role'); // ✅ Fix: populate sender details
-}
-
+  async createMessage(data: {
+    sender: string | Types.ObjectId;
+    group: string | Types.ObjectId;
+    text: string;
+  }) {
+    const message = await this.messageModel.create(data);
+    return message.populate('sender', 'name role');
+  }
 
   async sendMessage(user: any, groupId: string, text: string) {
     const group = await this.groupService.getGroupById(groupId);
     if (!group) {
-  throw new ForbiddenException('Group not found');
-}
+      throw new ForbiddenException('Group not found');
+    }
 
+    const userId = user._id?.toString() || user.sub;
     const isAuthorized =
-      group.teacher._id.toString() === user._id.toString() ||
-      group.students.some((s) => s._id.toString() === user._id.toString()) ||
+      group.members?.some((m) => m._id.toString() === userId) ||
       ['admin', 'super-admin'].includes(user.role);
 
-    if (!isAuthorized) throw new ForbiddenException('Not allowed');
+    if (!isAuthorized) {
+      throw new ForbiddenException('Not allowed');
+    }
 
     return this.messageModel.create({
-      sender: user.sub,
+      sender: new Types.ObjectId(userId),
       text,
-      group: groupId,
+      group: new Types.ObjectId(groupId),
     });
   }
+
   async getMessages(user: any, groupId: string) {
-  const group = await this.groupService.getGroupById(groupId);
+    const group = await this.groupService.getGroupById(groupId);
+    if (!group) {
+      throw new ForbiddenException('Group not found');
+    }
 
-  const userId = user.userId?.toString(); // ✅ correct
-  const teacherId = group.teacher?._id?.toString();
-  const studentIds = group.students.map((s) => s?._id?.toString());
+    const userId = user._id?.toString() || user.userId || user.sub;
 
-  const isAuthorized =
-    teacherId === userId ||
-    studentIds.includes(userId) ||
-    ['admin', 'super-admin'].includes(user.role);
+    const isAuthorized =
+      group.members?.some((m) => m._id.toString() === userId) ||
+      ['admin', 'super-admin'].includes(user.role);
 
-  if (!isAuthorized) {
-    throw new ForbiddenException('Not allowed');
+    if (!isAuthorized) {
+      throw new ForbiddenException('Not allowed');
+    }
+
+    return this.messageModel
+      .find({ group: new Types.ObjectId(groupId) })
+      .populate('sender', 'name role')
+      .sort({ createdAt: 1 });
   }
-
-  // ✅ Convert groupId to ObjectId
-  const objectGroupId = new Types.ObjectId(groupId);
-
-  return this.messageModel
-    .find({ group: objectGroupId }) // ✅ Use ObjectId
-    .populate('sender', 'name role')
-    .sort({ createdAt: 1 });
-}
-  
-
 }

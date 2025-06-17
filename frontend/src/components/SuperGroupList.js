@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-export default function UserGroupsList() {
+export default function SuperAdminGroupList() {
   const [groups, setGroups] = useState([]);
   const [filteredGroups, setFilteredGroups] = useState([]);
   const [search, setSearch] = useState('');
@@ -24,7 +24,7 @@ export default function UserGroupsList() {
         setGroups(list);
         setFilteredGroups(list);
       })
-      .catch((err) => console.error('❌ Failed to fetch user groups:', err))
+      .catch((err) => console.error('❌ Failed to fetch groups:', err))
       .finally(() => setLoading(false));
   }, []);
 
@@ -40,8 +40,7 @@ export default function UserGroupsList() {
 
   return (
     <div className="max-w-3xl mx-auto p-4 sm:p-6 mt-6 bg-white rounded-xl shadow">
-      
-      <h2 className="text-xl sm:text-2xl font-bold mb-4 text-center text-[#2E4D3B]">My Chat Groups</h2>
+      <h2 className="text-xl sm:text-2xl font-bold mb-4 text-center text-[#2E4D3B]">All Chat Groups</h2>
 
       {/* 🔍 Search Input */}
       <input
@@ -55,7 +54,7 @@ export default function UserGroupsList() {
       {loading ? (
         <p className="text-center text-gray-500">Loading groups...</p>
       ) : filteredGroups.length === 0 ? (
-        <p className="text-center text-gray-400">No groups assigned to you.</p>
+        <p className="text-center text-gray-400">No groups found.</p>
       ) : (
         <ul className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
           {filteredGroups.map((group) => (
@@ -65,10 +64,14 @@ export default function UserGroupsList() {
             >
               <div className="w-full sm:w-auto">
                 <div className="text-base sm:text-lg font-semibold text-gray-800">{group.name}</div>
+                {/* <div className="text-sm text-gray-500">
+                  Teacher: {group.teacher?.name || 'N/A'}
+                </div>
+                <div className="text-xs text-gray-400 break-all">ID: {group._id}</div> */}
               </div>
 
               <Link
-                href={`/chat/${group._id}`}
+                href={`/dashboard/super-admin/groups/${group._id}`}
                 className="w-full sm:w-auto text-center bg-[#2E4D3B] text-white px-4 py-2 rounded-lg hover:bg-[#3e6e4a] text-sm"
               >
                 Open Chat

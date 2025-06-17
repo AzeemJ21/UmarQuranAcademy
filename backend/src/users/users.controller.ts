@@ -8,18 +8,24 @@ import {
   Body,
   UseGuards,
   Req,
-  Request
+  Request,
+  Post
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/roles.guard';
 import { Roles } from 'src/auth/roles.decorator';
+import { User, UserDocument } from './user.schema';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 
 @Controller('user')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
-  
-  constructor(private readonly userService: UsersService) { }
+
+  constructor(private readonly userService: UsersService,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+  ) { }
 
   @Get()
   @Roles('super-admin')
@@ -58,7 +64,7 @@ export class UsersController {
   async getStudentsByTeacher(@Param('teacherId') teacherId: string) {
     return this.userService.getStudentsByTeacher(teacherId);
   }
- 
+
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   getProfile(@Request() req) {
@@ -68,4 +74,14 @@ export class UsersController {
   async getAssignedStudents(@Param('teacherId') teacherId: string) {
     return this.userService.getStudentsAssignedToTeacher(teacherId);
   }
+
+  // user.controller.ts
+  @Post('online-names')
+  async getOnlineUserNames(@Body('userIds') userIds: string[]) {
+    return await this.userModel.find(
+      { _id: { $in: userIds } },
+      { name: 1 }
+    ).lean(); // add `.lean()` to return plain JS objects
+  }
+
 }

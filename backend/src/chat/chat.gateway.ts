@@ -43,32 +43,28 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('joinGroup')
-async handleJoinGroup(
-  @ConnectedSocket() client: Socket,
-  @MessageBody() data: { groupId: string },
-) {
-  const { groupId } = data;
-  const user = client.data.user;
-  const userId = user._id || user.sub;
+  async handleJoinGroup(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { groupId: string },
+  ) {
+    const { groupId } = data;
+    const user = client.data.user;
+    const userId = user._id || user.sub;
 
-  const group = await this.groupService.getGroupById(groupId);
-  if (!group) return client.emit('error', 'Group not found');
+    const group = await this.groupService.getGroupById(groupId);
+    if (!group) return client.emit('error', 'Group not found');
 
-  const isMember =
-    group.teacher?._id?.toString() === userId ||
-    group.students?.some((s) => s._id?.toString() === userId) ||
-    ['admin', 'super-admin'].includes(user.role);
+    const isMember = group.members?.some(
+      (member) => member._id?.toString() === userId,
+    );
 
-  if (isMember) {
-    client.join(groupId);
-    console.log('✅ User joined group:', groupId);
-    // 🔥 Removed auto-fetch messages — handled by REST
-  } else {
-    client.emit('error', 'Unauthorized');
+    if (isMember) {
+      client.join(groupId);
+      console.log('✅ User joined group:', groupId);
+    } else {
+      client.emit('error', 'Unauthorized');
+    }
   }
-}
-
-
 
   @SubscribeMessage('leaveGroup')
   handleLeaveGroup(
@@ -79,45 +75,37 @@ async handleJoinGroup(
   }
 
   @SubscribeMessage('sendGroupMessage')
-async handleSendMessage(
-  @ConnectedSocket() client: Socket,
-  @MessageBody() data: { groupId: string; text: string },
-) {
-  const user = client.data.user;
-  const { groupId, text } = data;
+  async handleSendMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { groupId: string; text: string },
+  ) {
+    const user = client.data.user;
+    const { groupId, text } = data;
 
-  const userId = user._id || user.userId || user.userid || user.sub;
+    const userId = user._id || user.userId || user.userid || user.sub;
 
-  console.log('🟢 Incoming message:', { groupId, text });
-  console.log('👤 User sending message:', userId);
+    console.log('🟢 Incoming message:', { groupId, text });
+    console.log('👤 User sending message:', userId);
 
-  const group = await this.groupService.getGroupById(groupId);
-  if (!group) return client.emit('error', 'Group not found');
+    const group = await this.groupService.getGroupById(groupId);
+    if (!group) return client.emit('error', 'Group not found');
 
-  const isMember =
-    group.teacher?._id?.toString() === userId ||
-    group.students?.some((s) => s._id?.toString() === userId) ||
-    user.role === 'admin' ||
-    user.role === 'super-admin';
+    const isMember = group.members?.some(
+      (member) => member._id?.toString() === userId,
+    );
 
-  if (!isMember) {
-    console.warn('🚫 Unauthorized message sender:', userId);
-    return client.emit('error', 'Not allowed to send message');
+    if (!isMember) {
+      console.warn('🚫 Unauthorized message sender:', userId);
+      return client.emit('error', 'Not allowed to send message');
+    }
+
+    const message = await this.messageService.createMessage({
+      sender: new Types.ObjectId(userId),
+      group: new Types.ObjectId(groupId),
+      text,
+    });
+
+    const populatedMessage = await message.populate('sender', 'name role');
+    this.server.to(groupId).emit('groupMessage', populatedMessage);
   }
-
-  const message = await this.messageService.createMessage({
-    sender: new Types.ObjectId(userId),
-    group: new Types.ObjectId(groupId),
-    text,
-  });
-
-  // ✅ Populate sender info before emitting
-  const populatedMessage = await message.populate('sender', 'name role');
-
-  // Emit to everyone in the group with sender info
-  this.server.to(groupId).emit('groupMessage', populatedMessage);
-}
-
-
- 
 }

@@ -41,37 +41,38 @@ export class AuthController {
     const payload = { sub: user._id.toString(), role: user.role };
     const token = this.jwtService.sign(payload);
 
-    // 🔁 Redirect to frontend dashboard with token & user ID in query params
     return res.redirect(
-      `http://localhost:3000/dashboard/${user.role}?token=${token}&userId=${user._id}`
+      `http://localhost:3000/dashboard/${user.role}?token=${token}&userId=${user._id}`,
     );
   }
 
   @Post('register')
-  async register(
-    @Body() body: { name: string; email: string; password: string; role?: string },
-  ) {
-    const existing = await this.userService.findByEmail(body.email);
-    if (existing) {
-      throw new UnauthorizedException('User already exists');
-    }
-
-    const hashedPassword = await bcrypt.hash(body.password, 10);
-    const user = await this.userService.create({
-      name: body.name,
-      email: body.email,
-      password: hashedPassword,
-      role: body.role || 'student',
-    });
-
-    return {
-      message: 'User registered successfully',
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    };
+async register(
+  @Body() body: { name: string; email: string; password: string; role?: string },
+) {
+  const existing = await this.userService.findByEmail(body.email);
+  if (existing) {
+    throw new UnauthorizedException('User already exists');
   }
+
+  const hashedPassword = await bcrypt.hash(body.password, 10);
+  
+  const user = await this.userService.create({
+    name: body.name,
+    email: body.email,
+    password: hashedPassword,
+    role: body.role || 'student',
+  });
+
+  return {
+    message: 'User registered successfully',
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+  };
+}
+
 }

@@ -46,7 +46,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#2E4D3B] px-4">
+    <div className="min-h-screen flex items-center justify-center bg-black px-4">
       <div className="bg-white p-8 text-black rounded-2xl shadow-xl w-full max-w-md transition-all duration-300 ease-in-out">
         
         {/* Logo */}

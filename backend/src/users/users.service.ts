@@ -2,10 +2,16 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from './user.schema';
 import { Model, Types } from 'mongoose';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private readonly mailService: MailService,
+  ) {
+    console.log('📦 MailService injected in UsersService:', !!mailService);
+  }
 
   async findByEmail(email: string) {
     return this.userModel.findOne({ email });
@@ -16,8 +22,15 @@ export class UsersService {
   }
 
   async create(userData: Partial<User>) {
+    console.log('📥 UsersService.create() called with:', userData);
+
     const newUser = new this.userModel(userData);
-    return newUser.save();
+    const savedUser = await newUser.save();
+
+    console.log('📧 Sending welcome email to:', savedUser.email);
+    await this.mailService.sendWelcomeEmail(savedUser.email, savedUser.name);
+
+    return savedUser;
   }
 
   async findAll(role?: string): Promise<User[]> {
@@ -67,6 +80,7 @@ export class UsersService {
 
     return teacher.assignedStudents || [];
   }
+
   async getStudentsByTeacher(teacherId: string) {
     const teacher = await this.userModel.findById(teacherId);
     if (!teacher || teacher.role !== 'teacher') {
@@ -74,8 +88,6 @@ export class UsersService {
     }
 
     const studentIds = teacher.assignedStudents || [];
-
-    // Map ids to ObjectId to avoid CastError
     const objectIds = studentIds.map((id) => new Types.ObjectId(id));
 
     const students = await this.userModel.find({
@@ -87,38 +99,30 @@ export class UsersService {
   }
 
   async getStudentsAssignedToTeacher(teacherId: string): Promise<User[]> {
-  const teacher = await this.userModel
-    .findById(teacherId)
-    .populate('assignedStudents') // ✅ Correct path
-    .exec();
+    const teacher = await this.userModel
+      .findById(teacherId)
+      .populate('assignedStudents')
+      .exec();
 
-  if (!teacher || !teacher.assignedStudents) {
-    throw new NotFoundException('Teacher or students not found');
+    if (!teacher || !teacher.assignedStudents) {
+      throw new NotFoundException('Teacher or students not found');
+    }
+
+    return teacher.assignedStudents as unknown as User[];
   }
-
-  return teacher.assignedStudents as unknown as User[];
-
-}
-
-
-
 
   async findOrCreateGoogleUser(googleUser: { name: string; email: string; googleId: string }) {
-  let user = await this.userModel.findOne({ email: googleUser.email });
+    let user = await this.userModel.findOne({ email: googleUser.email });
 
-  if (!user) {
-    user = await this.userModel.create({
-      name: googleUser.name,
-      email: googleUser.email,
-      googleId: googleUser.googleId,
-      role: 'student', // default role
-    });
+    if (!user) {
+      user = await this.userModel.create({
+        name: googleUser.name,
+        email: googleUser.email,
+        googleId: googleUser.googleId,
+        role: 'student',
+      });
+    }
+
+    return user;
   }
-
-  return user;
-}
-
-
-
-
 }

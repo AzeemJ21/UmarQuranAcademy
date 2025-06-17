@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { connectSocket, getSocket, disconnectSocket } from '@/lib/socket';
 
 export default function GroupChatPage() {
+  const router = useRouter();
   const { groupId } = useParams();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -68,6 +69,13 @@ export default function GroupChatPage() {
 
   return (
     <div className="max-w-2xl mx-auto p-6 mt-8 bg-white rounded-xl shadow">
+      <button
+        onClick={() => router.back()}
+        className="mb-4 inline-flex items-center gap-2 text-sm px-4 py-2 bg-green-100 text-green-800 rounded-full hover:bg-green-200 transition"
+      >
+
+        ← Back
+      </button>
       <h2 className="text-xl font-bold mb-4 text-center">Group Chat</h2>
 
       <div

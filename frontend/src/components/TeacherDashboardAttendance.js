@@ -1,338 +1,157 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
-export default function TeacherDashboardAttendance() {
+export default function AttendanceForm() {
   const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [attendanceStatus, setAttendanceStatus] = useState({});
+  const [selectedStudent, setSelectedStudent] = useState('');
+  const [status, setStatus] = useState('Present');
+  const [message, setMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [token, setToken] = useState('');
+  const [teacherId, setTeacherId] = useState('');
 
+  // Load token and teacherId from localStorage
   useEffect(() => {
-    async function fetchStudents() {
-      setLoading(true);
-      try {
-        const userId = localStorage.getItem('userId');
-        const token = localStorage.getItem('token');
+    const storedToken = localStorage.getItem('token');
+    const storedUserId = localStorage.getItem('userId'); // this is the teacher
 
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/teacher/${userId}/students`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-
-        if (!res.ok) throw new Error('Failed to fetch students');
-        const data = await res.json();
-        setStudents(data);
-      } catch (err) {
-        alert('Error loading students: ' + err.message);
-      } finally {
-        setLoading(false);
-      }
+    if (storedToken) setToken(storedToken);
+    if (storedUserId) {
+      setTeacherId(storedUserId);
+      fetchAssignedStudents(storedToken, storedUserId);
     }
-
-    fetchStudents();
   }, []);
 
-  const markAttendance = async (studentId, status) => {
+  const fetchAssignedStudents = async (token, teacherId) => {
     try {
-      const token = localStorage.getItem('token');
-      const teacherId = localStorage.getItem('userId');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/teacher/${teacherId}/students`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-      setAttendanceStatus((prev) => ({
-        ...prev,
-        [studentId]: status,
-      }));
+      const data = await res.json();
+      const studentList = Array.isArray(data)
+        ? data
+        : Array.isArray(data.students)
+        ? data.students
+        : [];
 
+      setStudents(studentList);
+    } catch (err) {
+      console.error('Failed to fetch assigned students', err);
+      setStudents([]);
+    }
+  };
+
+  const handleSubmit = async () => {
+    setMessage('');
+
+    if (!selectedStudent) {
+      return setMessage('Please select a student.');
+    }
+
+    const payload = {
+      status,
+      student: selectedStudent,
+      teacher: teacherId, // link student attendance to the teacher
+    };
+
+    try {
+      setIsLoading(true);
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/attendance`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          student: studentId,
-          teacher: teacherId,
-          status: status.charAt(0).toUpperCase() + status.slice(1),
-        }),
+        body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error('Failed to mark attendance');
+      const result = await res.json();
+      setIsLoading(false);
+
+      if (!res.ok) return setMessage(result.message || 'Failed to mark attendance.');
+
+      setMessage('✅ Attendance marked successfully!');
     } catch (err) {
-      alert('Error: ' + err.message);
-      setAttendanceStatus((prev) => ({ ...prev, [studentId]: undefined }));
+      setIsLoading(false);
+      console.error('Error:', err);
+      setMessage('An unexpected error occurred.');
     }
   };
 
-  if (loading) return <p>Loading students...</p>;
-
   return (
-    <div className="p-6 max-w-4xl mx-auto bg-white rounded-xl shadow-lg">
-      <h2 className="text-3xl font-bold mb-6 text-[#2E4D3B]">Attendance Dashboard</h2>
+    <div className="mx-auto mt-10 bg-white p-8 rounded-2xl shadow-xl text-black">
+      <div className="flex justify-center mb-6">
+        <Image src="/assets/logo.png" alt="Quran Academy Logo" width={160} height={60} priority />
+      </div>
 
-      <table className="w-full border-collapse">
-        <thead>
-          <tr className="bg-[#2E4D3B] text-white">
-            <th className="p-3 text-left">Student Name</th>
-            <th className="p-3 text-center">Present</th>
-            <th className="p-3 text-center">Absent</th>
-            <th className="p-3 text-center">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {students.length === 0 && (
-            <tr>
-              <td colSpan="4" className="text-center py-6 text-gray-500">
-                No students found.
-              </td>
-            </tr>
-          )}
+      <h2 className="text-2xl font-bold text-[#2E4D3B] text-center mb-6">
+        Mark Student Attendance
+      </h2>
 
-          {students.map((student) => (
-            <tr key={student._id} className="border-b hover:bg-gray-50">
-              <td className="p-3">{student.name}</td>
-              <td className="p-3 text-center">
-                <button
-                  className={`px-4 py-1 rounded ${
-                    attendanceStatus[student._id] === 'present'
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-200 text-gray-700'
-                  }`}
-                  onClick={() => markAttendance(student._id, 'present')}
-                >
-                  Present
-                </button>
-              </td>
-              <td className="p-3 text-center">
-                <button
-                  className={`px-4 py-1 rounded ${
-                    attendanceStatus[student._id] === 'absent'
-                      ? 'bg-red-600 text-white'
-                      : 'bg-gray-200 text-gray-700'
-                  }`}
-                  onClick={() => markAttendance(student._id, 'absent')}
-                >
-                  Absent
-                </button>
-              </td>
-              <td className="p-3 text-center capitalize text-sm text-gray-700">
-                {attendanceStatus[student._id] || 'Not Marked'}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {message && <p className="mb-4 text-center text-blue-600">{message}</p>}
+
+      {/* Select Student */}
+      <label className="block mb-1 font-medium text-black">Select Student:</label>
+      <select
+        className="w-full px-4 py-2 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2E4D3B] text-black"
+        value={selectedStudent}
+        onChange={(e) => setSelectedStudent(e.target.value)}
+      >
+        <option value="">-- Select Student --</option>
+        {students.map((s) => (
+          <option key={s._id} value={s._id}>
+            {s.name}
+          </option>
+        ))}
+      </select>
+
+      {/* Attendance Status */}
+      <label className="block mb-1 font-medium text-black">Status:</label>
+      <select
+        className="w-full px-4 py-2 mb-6 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2E4D3B] text-black"
+        value={status}
+        onChange={(e) => setStatus(e.target.value)}
+      >
+        <option value="Present">Present</option>
+        <option value="Absent">Absent</option>
+        <option value="Late">Late</option>
+        <option value="Excused">Excused</option>
+      </select>
+
+      <button
+        onClick={handleSubmit}
+        disabled={isLoading}
+        className="w-full bg-[#2E4D3B] hover:bg-[#3f6b4a] text-white font-semibold py-2 rounded-lg flex justify-center items-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isLoading && (
+          <svg
+            className="animate-spin h-5 w-5 text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            ></path>
+          </svg>
+        )}
+        {isLoading ? 'Marking...' : 'Mark Attendance'}
+      </button>
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// 'use client';
-
-// import { useEffect, useState } from 'react';
-
-// export default function TeacherDashboardAttendance() {
-//   const [students, setStudents] = useState([]);
-//   const [loading, setLoading] = useState(false);
-//   const [attendanceStatus, setAttendanceStatus] = useState({});
-//   const [isLocked, setIsLocked] = useState(false);
-
-//   // Check and unlock attendance after midnight
-//   const checkUnlockTime = () => {
-//     const lastMarkedDate = localStorage.getItem('attendanceDate');
-//     const today = new Date().toISOString().split('T')[0];
-
-//     if (lastMarkedDate !== today) {
-//       setAttendanceStatus({});
-//       localStorage.removeItem('attendanceDate');
-//       setIsLocked(false);
-//     } else {
-//       setIsLocked(true);
-//     }
-//   };
-
-//   useEffect(() => {
-//     checkUnlockTime();
-
-//     async function fetchStudents() {
-//       setLoading(true);
-//       try {
-//         const userId = localStorage.getItem('userId');
-//         const token = localStorage.getItem('token');
-
-//         const res = await fetch(
-//           `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/teacher/${userId}/students`,
-//           {
-//             headers: { Authorization: `Bearer ${token}` },
-//           }
-//         );
-
-//         if (!res.ok) throw new Error('Failed to fetch students');
-//         const data = await res.json();
-//         setStudents(data);
-//       } catch (err) {
-//         alert('Error loading students: ' + err.message);
-//       } finally {
-//         setLoading(false);
-//       }
-//     }
-
-//     fetchStudents();
-//   }, []);
-
-//   const markAttendance = async (studentId, status) => {
-//     try {
-//       const token = localStorage.getItem('token');
-//       const teacherId = localStorage.getItem('userId');
-
-//       // Optimistic UI update
-//       const updatedStatus = {
-//         ...attendanceStatus,
-//         [studentId]: status,
-//       };
-
-//       setAttendanceStatus(updatedStatus);
-
-//       const res = await fetch(`http://localhost:3001/attendance`, {
-//         method: 'POST',
-//         headers: {
-//           'Content-Type': 'application/json',
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify({
-//           student: studentId,
-//           teacher: teacherId,
-//           status: status.charAt(0).toUpperCase() + status.slice(1),
-//         }),
-//       });
-
-//       if (!res.ok) throw new Error('Failed to mark attendance');
-
-//       // ✅ Only lock if ALL students are marked
-//       const allMarked =
-//         students.length > 0 &&
-//         students.every((s) => updatedStatus[s._id] === 'present' || updatedStatus[s._id] === 'absent');
-
-//       if (allMarked) {
-//         const today = new Date().toISOString().split('T')[0];
-//         localStorage.setItem('attendanceDate', today);
-//         setIsLocked(true);
-//       }
-//     } catch (err) {
-//       alert('Error: ' + err.message);
-//       setAttendanceStatus((prev) => ({ ...prev, [studentId]: undefined }));
-//     }
-//   };
-
-//   if (loading) return <p>Loading students...</p>;
-
-//   return (
-//     <div className="p-6 max-w-4xl mx-auto bg-white rounded-xl shadow-lg">
-//       <h2 className="text-3xl font-bold mb-6 text-[#2E4D3B]">Attendance Dashboard</h2>
-
-//       <table className="w-full border-collapse">
-//         <thead>
-//           <tr className="bg-[#2E4D3B] text-white">
-//             <th className="p-3 text-left">Student Name</th>
-//             <th className="p-3 text-center">Present</th>
-//             <th className="p-3 text-center">Absent</th>
-//             <th className="p-3 text-center">Status</th>
-//           </tr>
-//         </thead>
-//         <tbody>
-//           {students.length === 0 && (
-//             <tr>
-//               <td colSpan="4" className="text-center py-6 text-gray-500">
-//                 No students found.
-//               </td>
-//             </tr>
-//           )}
-
-//           {students.map((student) => (
-//             <tr key={student._id} className="border-b hover:bg-gray-50">
-//               <td className="p-3">{student.name}</td>
-//               <td className="p-3 text-center">
-//                 <button
-//                   className={`px-4 py-1 rounded ${
-//                     attendanceStatus[student._id] === 'present'
-//                       ? 'bg-green-600 text-white'
-//                       : 'bg-gray-200 text-gray-700'
-//                   }`}
-//                   disabled={isLocked || attendanceStatus[student._id]}
-//                   onClick={() => markAttendance(student._id, 'present')}
-//                 >
-//                   Present
-//                 </button>
-//               </td>
-//               <td className="p-3 text-center">
-//                 <button
-//                   className={`px-4 py-1 rounded ${
-//                     attendanceStatus[student._id] === 'absent'
-//                       ? 'bg-red-600 text-white'
-//                       : 'bg-gray-200 text-gray-700'
-//                   }`}
-//                   disabled={isLocked || attendanceStatus[student._id]}
-//                   onClick={() => markAttendance(student._id, 'absent')}
-//                 >
-//                   Absent
-//                 </button>
-//               </td>
-//               <td className="p-3 text-center capitalize text-sm text-gray-700">
-//                 {attendanceStatus[student._id] || 'Not Marked'}
-//               </td>
-//             </tr>
-//           ))}
-//         </tbody>
-//       </table>
-
-//       {isLocked && (
-//         <p className="mt-6 text-center text-yellow-600 font-semibold">
-//           Attendance has been locked for today. It will reset after midnight.
-//         </p>
-//       )}
-//     </div>
-//   );
-// }

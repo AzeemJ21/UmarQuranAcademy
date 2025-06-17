@@ -1,6 +1,8 @@
 'use client';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { ssr: false });
 
 export default function AssignHomeworkForm() {
   const [students, setStudents] = useState([]);
@@ -143,19 +145,17 @@ export default function AssignHomeworkForm() {
           />
         </div>
 
-        {/* Textareas */}
+         {/* Rich Text Fields */}
         {['sabaq', 'sabqi', 'manzil', 'comment'].map((field) => (
           <div key={field}>
-            <label className="block mb-1 font-medium capitalize text-gray-700">
+            <label className="block mb-1 font-medium capitalize text-gray-700 text-sm sm:text-base">
               {field}
             </label>
-            <textarea
-              name={field}
-              placeholder={`Enter ${field}`}
+            <RichTextEditor
               value={homework[field]}
-              onChange={handleChange}
-              rows={3}
-              className="w-full px-4 py-2 border border-gray-300 text-black rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2E4D3B]"
+              onChange={(val) =>
+                setHomework((prev) => ({ ...prev, [field]: val }))
+              }
             />
           </div>
         ))}

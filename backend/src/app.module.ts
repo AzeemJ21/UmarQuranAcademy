@@ -10,6 +10,8 @@ import { MessageModule } from './message/message.module';
 import { ChatModule } from './chat/chat.module';
 import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard } from './auth/roles.guard';
+import { MailModule } from './mail/mail.module';
+import { UserGateway } from './users/user.gateway';
 
 @Module({
   imports: [
@@ -22,12 +24,14 @@ import { RolesGuard } from './auth/roles.guard';
     GroupModule,
     MessageModule,
     ChatModule,
+    MailModule,
   ],
   providers: [
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
     },
+    UserGateway,
   ],
 })
 export class AppModule {}

@@ -8,6 +8,7 @@ const AssignStudent = () => {
   const [students, setStudents] = useState([]);
   const [selectedTeacher, setSelectedTeacher] = useState('');
   const [selectedStudents, setSelectedStudents] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -69,7 +70,7 @@ const AssignStudent = () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ studentIds: selectedStudents }),
       }
@@ -81,14 +82,19 @@ const AssignStudent = () => {
       alert('✅ Students assigned successfully!');
       setSelectedTeacher('');
       setSelectedStudents([]);
+      setSearchTerm('');
     } else {
       alert('❌ Error: ' + result.message);
     }
   };
 
+  const filteredStudents = students.filter((student) =>
+    student.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div className="min-h-screen w-full bg-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl bg-white px-4 py-6 sm:p-8 rounded-xl shadow-lg">
+    // <div className="min-h-screen w-full bg-white flex items-center justify-center p-4">
+      <div className="w-full bg-white px-4 py-6 sm:p-8 rounded-xl shadow-lg">
         <div className="flex justify-center mb-6">
           <Image
             src="/assets/logo.png"
@@ -106,6 +112,7 @@ const AssignStudent = () => {
           Select a teacher and assign students
         </p>
 
+        {/* Teacher Selection */}
         <div className="mb-4">
           <label className="block mb-1 font-medium text-gray-700 text-sm sm:text-base">
             Select Teacher
@@ -124,41 +131,54 @@ const AssignStudent = () => {
           </select>
         </div>
 
+        {/* Students Selection with Search */}
         <div className="mb-6">
-          <label className="block mb-2 font-medium text-gray-700 text-sm sm:text-base">
+          <label className="block mb-1 font-medium text-gray-700 text-sm sm:text-base">
             Select Students
           </label>
+          <input
+            type="text"
+            placeholder="Search students..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full mb-3 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2E4D3B] text-sm"
+          />
           <div className="max-h-52 overflow-y-auto border border-gray-300 rounded-lg p-4 space-y-2">
-            {students.map((student) => (
-              <div key={student._id} className="flex items-center">
-                <input
-                  type="checkbox"
-                  id={student._id}
-                  value={student._id}
-                  checked={selectedStudents.includes(student._id)}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (e.target.checked) {
-                      setSelectedStudents((prev) => [...prev, value]);
-                    } else {
-                      setSelectedStudents((prev) =>
-                        prev.filter((id) => id !== value)
-                      );
-                    }
-                  }}
-                  className="mr-2 accent-[#2E4D3B]"
-                />
-                <label
-                  htmlFor={student._id}
-                  className="text-gray-800 text-sm sm:text-base"
-                >
-                  {student.name}
-                </label>
-              </div>
-            ))}
+            {filteredStudents.length > 0 ? (
+              filteredStudents.map((student) => (
+                <div key={student._id} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id={student._id}
+                    value={student._id}
+                    checked={selectedStudents.includes(student._id)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (e.target.checked) {
+                        setSelectedStudents((prev) => [...prev, value]);
+                      } else {
+                        setSelectedStudents((prev) =>
+                          prev.filter((id) => id !== value)
+                        );
+                      }
+                    }}
+                    className="mr-2 accent-[#2E4D3B]"
+                  />
+                  <label
+                    htmlFor={student._id}
+                    className="text-gray-800 text-sm sm:text-base"
+                  >
+                    {student.name}
+                  </label>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-gray-500">No students found.</p>
+            )}
           </div>
         </div>
 
+        {/* Assign Button */}
         <button
           onClick={handleAssign}
           className="w-full bg-[#2E4D3B] hover:bg-[#3f6b4a] text-white font-semibold py-2 rounded-lg transition text-sm sm:text-base"
@@ -166,9 +186,8 @@ const AssignStudent = () => {
           Assign
         </button>
       </div>
-    </div>
+    // </div>
   );
-
 };
 
 export default AssignStudent;

@@ -21,28 +21,66 @@ export default function RegisterForm() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    const token = localStorage.getItem('token');
+  e.preventDefault();
+  const token = localStorage.getItem('token');
 
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(formData),
+    });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Something went wrong');
-      setMessage('✅ User registered successfully!');
-    } catch (err) {
-      setMessage(`❌ ${err.message}`);
-    }
-  };
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Something went wrong');
+
+    await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/mail/send-welcome`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+         Authorization: `Bearer ${token}`,
+
+      },
+      body: JSON.stringify({
+        email: formData.email,
+        name: formData.name,
+      }),
+    });
+
+    setMessage('✅ User registered successfully and email sent!');
+  } catch (err) {
+    setMessage(`❌ ${err.message}`);
+  }
+};
+
+
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   const token = localStorage.getItem('token');
+
+  //   try {
+  //     const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/register`, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //       body: JSON.stringify(formData),
+  //     });
+
+  //     const data = await res.json();
+  //     if (!res.ok) throw new Error(data.message || 'Something went wrong');
+  //     setMessage('✅ User registered successfully!');
+  //   } catch (err) {
+  //     setMessage(`❌ ${err.message}`);
+  //   }
+  // };
 
   return (
+    <div className='flex items-center justify-center'>
     <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md mx-auto text-black">
       <div className="flex justify-center mb-6">
                 <Image
@@ -130,6 +168,6 @@ export default function RegisterForm() {
           Register
         </button>
       </form>
-    </div>
+    </div></div>
   );
 }

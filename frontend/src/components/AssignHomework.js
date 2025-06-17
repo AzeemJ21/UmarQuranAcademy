@@ -91,6 +91,49 @@ export default function AssignHomeworkForm() {
     setHomework({ ...homework, [e.target.name]: e.target.value });
   };
 
+  //with validation
+//   const handleSubmit = async (e) => {
+//   e.preventDefault();
+//   const token = localStorage.getItem('token');
+
+//   const stripHTML = (html) => html.replace(/<[^>]+>/g, '').trim();
+
+//   if (
+//     !stripHTML(homework.sabaq) ||
+//     !stripHTML(homework.sabqi) ||
+//     !stripHTML(homework.manzil)
+//   ) {
+//     alert('❌ Please fill out Sabaq, Sabqi, and Manzil fields.');
+//     return;
+//   }
+
+//   const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/homework`, {
+//     method: 'POST',
+//     headers: {
+//       'Content-Type': 'application/json',
+//       Authorization: `Bearer ${token}`,
+//     },
+//     body: JSON.stringify(homework),
+//   });
+
+//   if (res.ok) {
+//     alert('✅ Homework assigned successfully!');
+//     setHomework({
+//       teacher: homework.teacher,
+//       student: [],
+//       date: '',
+//       sabaq: '',
+//       sabqi: '',
+//       manzil: '',
+//       comment: '',
+//     });
+//     setStudents([]);
+//   } else {
+//     alert('❌ Failed to assign homework');
+//   }
+// };
+
+
   // ✅ Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -123,8 +166,7 @@ export default function AssignHomeworkForm() {
   };
 
   return (
-  <div className="min-h-screen w-full bg-gray-50 flex items-center justify-center p-4">
-    <div className="w-full max-w-2xl bg-white px-4 py-6 sm:p-8 rounded-xl shadow-lg">
+    <div className="w-full bg-white px-4 py-6 sm:p-8 rounded-xl shadow-lg">
       <div className="flex justify-center mb-6">
         <Image
           src="/assets/logo.png"
@@ -231,7 +273,7 @@ export default function AssignHomeworkForm() {
         </button>
       </form>
     </div>
-  </div>
+  
 );
 
 }

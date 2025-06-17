@@ -12,7 +12,7 @@ function HomeworkTable({ teacherId }) {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!teacherId) return;
+    if (!teacherId || !token) return;
 
     const fetchHomeworks = async () => {
       try {
@@ -55,7 +55,7 @@ function HomeworkTable({ teacherId }) {
   if (!teacherId) {
     return (
       <div className="text-center text-gray-500 mt-4">
-        Please select a teacher to view assigned homeworks.
+        No teacher ID found.
       </div>
     );
   }
@@ -115,7 +115,6 @@ function HomeworkTable({ teacherId }) {
                       {hw.student?.name || 'Unknown'}
                     </td>
                     <td className="px-4 py-3 text-gray-600">{formattedDate}</td>
-
                     <td className="px-4 py-3 whitespace-pre-wrap">
                       <div dangerouslySetInnerHTML={{ __html: hw.sabaq }} />
                     </td>
@@ -125,7 +124,6 @@ function HomeworkTable({ teacherId }) {
                     <td className="px-4 py-3 whitespace-pre-wrap">
                       <div dangerouslySetInnerHTML={{ __html: hw.manzil }} />
                     </td>
-
                     <td className="px-4 py-3">
                       {hw.comment ? (
                         <details>
@@ -164,28 +162,15 @@ function HomeworkTable({ teacherId }) {
 }
 
 export default function HomeworkDashboard() {
-  const [teachers, setTeachers] = useState([]);
-  const [selectedTeacherId, setSelectedTeacherId] = useState('');
+  const [teacherId, setTeacherId] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('token');
+    if (!token) return;
 
-    const fetchTeachers = async () => {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user`, {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await res.json();
-        const onlyTeachers = data.filter((u) => u.role === 'teacher');
-        setTeachers(onlyTeachers);
-      } catch (error) {
-        console.error('Failed to fetch teachers', error);
-      }
-    };
-    fetchTeachers();
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const idFromToken = payload?.sub || payload?.userId || payload?._id;
+    setTeacherId(idFromToken);
   }, []);
 
   return (
@@ -200,23 +185,7 @@ export default function HomeworkDashboard() {
         />
       </div>
 
-      <div className="mb-6">
-        <label className="block mb-2 font-medium text-gray-700">Select Teacher</label>
-        <select
-          value={selectedTeacherId}
-          onChange={(e) => setSelectedTeacherId(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#2E4D3B]"
-        >
-          <option value="">-- Select Teacher --</option>
-          {teachers.map((t) => (
-            <option key={t._id} value={t._id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <HomeworkTable teacherId={selectedTeacherId} />
+      <HomeworkTable teacherId={teacherId} />
     </div>
   );
 }

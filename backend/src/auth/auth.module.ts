@@ -7,6 +7,7 @@ import { UsersModule } from '../users/users.module';
 import { ConfigModule } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
 import { GoogleStrategy } from './google.strategy';
+import { MailModule } from 'src/mail/mail.module';
 
 
 @Module({
@@ -18,6 +19,7 @@ import { GoogleStrategy } from './google.strategy';
       signOptions: { expiresIn: '1d' },
     }),
     UsersModule,
+    MailModule,
   ],
   controllers: [AuthController],
   providers: [AuthService,JwtStrategy,GoogleStrategy ],

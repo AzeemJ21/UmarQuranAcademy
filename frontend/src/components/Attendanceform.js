@@ -118,7 +118,7 @@ export default function AttendanceForm() {
   };
 
   return (
-    <div className="max-w-lg mx-auto mt-10 bg-white p-8 rounded-2xl shadow-xl text-black">
+    <div className="mx-auto mt-10 bg-white p-8 rounded-2xl shadow-xl text-black">
       <div className="flex justify-center mb-6">
         <Image src="/assets/logo.png" alt="Quram Academy Logo" width={160} height={60} priority />
       </div>

@@ -44,7 +44,7 @@ export default function TeacherDashboardAttendance() {
         [studentId]: status,
       }));
 
-      const res = await fetch(`http://localhost:3001/attendance`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/attendance`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -11,7 +11,7 @@ export default function UsersPage() {
   const router = useRouter();
 
   const fetchUsers = async () => {
-    const res = await fetch('http://localhost:3001/user', {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token')}`,
       },
@@ -21,7 +21,7 @@ export default function UsersPage() {
   };
 
   const handleDelete = async (id) => {
-    const res = await fetch(`http://localhost:3001/user/${id}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/${id}`, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -32,7 +32,7 @@ export default function UsersPage() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    const res = await fetch('http://localhost:3001/user', {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

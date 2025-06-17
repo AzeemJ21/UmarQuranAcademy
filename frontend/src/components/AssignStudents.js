@@ -13,7 +13,7 @@ const AssignStudent = () => {
     const token = localStorage.getItem('token');
 
     // Fetch teachers
-    fetch(`http://localhost:3001/user?role=teacher`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user?role=teacher`, {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
@@ -34,7 +34,7 @@ const AssignStudent = () => {
       });
 
     // Fetch students
-    fetch(`http://localhost:3001/user?role=student`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user?role=student`, {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
@@ -64,7 +64,7 @@ const AssignStudent = () => {
     }
 
     const res = await fetch(
-      `http://localhost:3001/user/assign-students/${selectedTeacher}`,
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/assign-students/${selectedTeacher}`,
       {
         method: 'PUT',
         headers: {

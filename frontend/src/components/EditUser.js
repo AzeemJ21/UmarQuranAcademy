@@ -16,7 +16,7 @@ export default function EditUserModal({ isOpen, onClose, userId, onUserUpdated }
     setLoading(true);
     setUser(null); // reset user before fetch
 
-    fetch(`http://localhost:3001/user/${userId}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/${userId}`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     })
       .then((res) => res.json())
@@ -39,7 +39,7 @@ export default function EditUserModal({ isOpen, onClose, userId, onUserUpdated }
       const payload = { ...user };
       if (!payload.password) delete payload.password;
 
-      const res = await fetch(`http://localhost:3001/user/${userId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

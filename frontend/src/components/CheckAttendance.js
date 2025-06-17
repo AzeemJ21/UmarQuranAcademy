@@ -14,7 +14,7 @@ export default function AttendancePage() {
   useEffect(() => {
     const fetchAttendance = async () => {
       try {
-        const res = await fetch('http://localhost:3001/attendance');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/attendance`);
         const data = await res.json();
         setTeacherAttendance(data.filter((a) => a.teacher));
         setStudentAttendance(data.filter((a) => a.student));

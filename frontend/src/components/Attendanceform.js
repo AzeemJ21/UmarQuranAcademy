@@ -28,7 +28,7 @@ export default function AttendanceForm() {
 
     const fetchTeachers = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/user?role=teacher`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user?role=teacher`, {
           headers: {
             Authorization: `Bearer ${storedToken}`,
           },
@@ -47,7 +47,7 @@ export default function AttendanceForm() {
     if (!teacherId) return setStudents([]);
 
     try {
-      const res = await fetch(`http://localhost:3001/user/teacher/${teacherId}/students`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/teacher/${teacherId}/students`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -95,7 +95,7 @@ export default function AttendanceForm() {
 
     try {
       setIsLoading(true);
-      const res = await fetch(`http://localhost:3001/attendance`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/attendance`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -14,7 +14,7 @@ export default function CreateGroupForm() {
         if (!token) return;
 
         // Fetch all teachers
-        fetch(`http://localhost:3001/user?role=teacher`, {
+        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user?role=teacher`, {
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${token}`,
@@ -42,7 +42,7 @@ export default function CreateGroupForm() {
         if (!teacherId || !token) return;
 
         try {
-            const res = await fetch(`http://localhost:3001/user/students/${teacherId}`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/students/${teacherId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -69,7 +69,7 @@ export default function CreateGroupForm() {
         }
 
         try {
-            const res = await fetch(`http://localhost:3001/groups`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/groups`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -171,7 +171,7 @@ export default function CreateGroupForm() {
 //         if (!token) return;
 
 //         // Fetch Teachers
-//         fetch(`http://localhost:3001/user?role=teacher`, {
+//         fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user?role=teacher`, {
 //             headers: {
 //                 'Content-Type': 'application/json',
 //                 Authorization: `Bearer ${token}`,
@@ -192,7 +192,7 @@ export default function CreateGroupForm() {
 //             .catch((err) => console.error('Error fetching teachers:', err));
 
 //         // Fetch Students
-//         fetch(`http://localhost:3001/user?role=student`, {
+//         fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user?role=student`, {
 //             headers: {
 //                 'Content-Type': 'application/json',
 //                 Authorization: `Bearer ${token}`,
@@ -222,7 +222,7 @@ export default function CreateGroupForm() {
 //         }
 
 //         try {
-//             const res = await fetch(`http://localhost:3001/groups`, {
+//             const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/groups`, {
 //                 method: 'POST',
 //                 headers: {
 //                     'Content-Type': 'application/json',

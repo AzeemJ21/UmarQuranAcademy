@@ -30,7 +30,7 @@ export default function GroupChatPage() {
     const userId = decodedPayload.sub || decodedPayload.userId;
     setCurrentUserId(userId);
 
-    fetch(`http://localhost:3001/groups/${groupId}/messages`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/groups/${groupId}/messages`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

@@ -33,7 +33,7 @@ export default function AssignHomeworkForm() {
     const token = localStorage.getItem('token');
     const fetchTeachers = async () => {
       try {
-        const res = await fetch('http://localhost:3001/user', {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user`, {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
@@ -58,7 +58,7 @@ export default function AssignHomeworkForm() {
 
     const fetchStudents = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/user/students/${teacherId}`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/students/${teacherId}`, {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
@@ -96,7 +96,7 @@ export default function AssignHomeworkForm() {
     e.preventDefault();
     const token = localStorage.getItem('token');
 
-    const res = await fetch('http://localhost:3001/homework', {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/homework`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

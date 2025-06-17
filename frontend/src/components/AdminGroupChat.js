@@ -23,7 +23,7 @@ export default function AdminGroupChat() {
     const token = localStorage.getItem('token');
     if (!token) return;
 
-    fetch(`http://localhost:3001/groups/${groupId}/messages`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/groups/${groupId}/messages`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

@@ -38,7 +38,7 @@ export default function SuperAdminDashboard() {
   const [editUserId, setEditUserId] = useState([]);
 
   const fetchUsers = async () => {
-    const res = await fetch('http://localhost:3001/user', {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token')}`,
       },
@@ -70,7 +70,7 @@ export default function SuperAdminDashboard() {
 
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this user?')) return;
-    const res = await fetch(`http://localhost:3001/user/${id}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/${id}`, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token')}`,

@@ -13,7 +13,7 @@ export default function UserGroupsList() {
       return;
     }
 
-    fetch('http://localhost:3001/groups', {
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/groups`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

@@ -30,6 +30,7 @@ import useAuthRedirect from '@/hooks/useAuthRedirect';
 export default function SuperAdminDashboard() {
   useAuthRedirect();
   const router = useRouter();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [active, setActive] = useState('dashboard');
   const [users, setUsers] = useState([]);
   const [filterRole, setFilterRole] = useState('all');
@@ -112,11 +113,23 @@ export default function SuperAdminDashboard() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden relative">
+      {/* Hamburger Button for Mobile */}
+      <button
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className="absolute top-4 left-4 z-50 md:hidden text-white bg-[#2E4D3B] p-2 rounded-md shadow"
+      >
+        ☰
+      </button>
+
       {/* Sidebar */}
-      <aside className="w-68 bg-[#2E4D3B] text-white shadow-xl flex flex-col p-6 h-full overflow-y-auto scrollbar-thin">
-
-
+      <aside
+        className={`
+        fixed top-0 left-0 h-full z-40 bg-[#2E4D3B] text-white shadow-xl flex flex-col p-6 overflow-y-auto transition-transform duration-300
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        md:relative md:translate-x-0 md:w-68
+      `}
+      >
         <motion.h2
           initial={{ x: -100, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
@@ -134,15 +147,16 @@ export default function SuperAdminDashboard() {
               />
             </div>
           </div>
-
-
         </motion.h2>
+
         <nav className="flex flex-col space-y-4">
           {sidebarLinks.map((item) => (
             <motion.button
               key={item.key}
-              onClick={() => setActive(item.key)}
-
+              onClick={() => {
+                setActive(item.key);
+                if (window.innerWidth < 768) setIsSidebarOpen(false); // Auto-close on mobile
+              }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.98 }}
               className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 ${active === item.key
@@ -157,6 +171,14 @@ export default function SuperAdminDashboard() {
         </nav>
       </aside>
 
+      {/* Backdrop when sidebar open (mobile only) */}
+      {isSidebarOpen && (
+        <div
+          onClick={() => setIsSidebarOpen(false)}
+          className="fixed inset-0 bg-black bg-opacity-40 z-30 md:hidden"
+        />
+      )}
+
       {/* Main content */}
       <main className="flex-1 overflow-y-auto p-10 bg-gradient-to-br from-[#f0f4f3] to-[#e6ebe9] text-[#2E4D3B]">
         <AnimatePresence mode="wait">
@@ -169,7 +191,7 @@ export default function SuperAdminDashboard() {
               transition={{ duration: 0.4 }}
             >
               <div className="mb-10">
-                <h1 className="text-4xl font-bold text-[#2E4D3B] mb-2">Welcome, Super Admin!</h1>
+                <h1 className="text-3xl sm:text-4xl font-bold text-[#2E4D3B] mb-2">Welcome, Super Admin!</h1>
                 <p className="text-gray-600">Manage your platform from here.</p>
               </div>
 
@@ -181,7 +203,7 @@ export default function SuperAdminDashboard() {
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                   <label className="text-gray-700 font-medium">Filter by Role:</label>
                   <select
                     value={filterRole}
@@ -204,7 +226,7 @@ export default function SuperAdminDashboard() {
               </div>
 
               <div className="overflow-x-auto bg-white shadow-lg rounded-xl">
-                <table className="w-full text-left border-collapse">
+                <table className="min-w-full text-left border-collapse">
                   <thead className="bg-[#2E4D3B] text-white">
                     <tr>
                       <th className="p-4">Name</th>
@@ -220,24 +242,26 @@ export default function SuperAdminDashboard() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.2 }}
-                        className="hover:bg-gray-100 border-b"
+                        className="hover:bg-gray-50 border-b"
                       >
                         <td className="p-4">{u.name}</td>
                         <td className="p-4">{u.email}</td>
                         <td className="p-4 capitalize">{u.role}</td>
-                        <td className="p-4 space-x-2">
-                          <button
-                            onClick={() => openEditModal(u._id)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded shadow"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(u._id)}
-                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded shadow"
-                          >
-                            Delete
-                          </button>
+                        <td className="p-4">
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <button
+                              onClick={() => openEditModal(u._id)}
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded shadow text-sm"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(u._id)}
+                              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded shadow text-sm"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </motion.tr>
                     ))}
@@ -260,6 +284,7 @@ export default function SuperAdminDashboard() {
               />
             </motion.div>
           )}
+
 
           {active === 'register' && (
             <motion.div

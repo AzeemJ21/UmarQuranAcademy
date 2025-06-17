@@ -33,31 +33,34 @@ export default function UserGroupsList() {
   }, []);
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-4 text-[#2E4D3B]">My Groups</h2>
-      {!Array.isArray(groups) || groups.length === 0 ? (
-        <p>No groups assigned yet.</p>
-      ) : (
-        <ul className="space-y-4">
-          {groups.map((group) => (
-            <li
-              key={group._id}
-              className="border border-gray-300 p-4 rounded-lg flex justify-between items-center"
+  <div className="w-full max-w-4xl mx-auto p-4 sm:p-6 bg-white rounded-lg shadow-md">
+    <h2 className="text-xl sm:text-2xl font-bold mb-4 text-[#2E4D3B]">My Groups</h2>
+
+    {!Array.isArray(groups) || groups.length === 0 ? (
+      <p className="text-sm text-gray-600">No groups assigned yet.</p>
+    ) : (
+      <ul className="space-y-4">
+        {groups.map((group) => (
+          <li
+            key={group._id}
+            className="border border-gray-300 p-4 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+          >
+            <div>
+              <h3 className="text-base sm:text-lg font-semibold">{group.name}</h3>
+              <p className="text-sm text-gray-600 break-all">Group ID: {group._id}</p>
+            </div>
+
+            <Link
+              href={`/chat/${group._id}`}
+              className="w-full sm:w-auto text-center px-4 py-2 bg-[#2E4D3B] text-white rounded hover:bg-[#3e6e4a] text-sm sm:text-base"
             >
-              <div>
-                <h3 className="text-lg font-semibold">{group.name}</h3>
-                <p className="text-sm text-gray-600">Group ID: {group._id}</p>
-              </div>
-              <Link
-                href={`/chat/${group._id}`}
-                className="px-4 py-2 bg-[#2E4D3B] text-white rounded hover:bg-[#3e6e4a]"
-              >
-                Open Chat
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
+              Open Chat
+            </Link>
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+);
+
 }

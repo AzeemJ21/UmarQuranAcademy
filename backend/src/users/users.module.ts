@@ -6,6 +6,7 @@ import { User, UserSchema } from './user.schema';
 import { JwtModule } from '@nestjs/jwt';           // Import JwtModule
 import { RolesGuard } from '../auth/roles.guard';  // Import RolesGuard
 import { MailModule } from 'src/mail/mail.module';
+import { UserGateway } from './user.gateway';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { MailModule } from 'src/mail/mail.module';
     }),
     MailModule,
   ],
-  providers: [UsersService, RolesGuard ],  // RolesGuard yahan add karo
+  providers: [UsersService, RolesGuard ,UserGateway ],  // RolesGuard yahan add karo
   controllers: [UsersController],
   exports: [UsersService,
     MongooseModule

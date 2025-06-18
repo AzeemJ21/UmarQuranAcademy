@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { io } from 'socket.io-client';
 import {
   FaClipboardList,
   FaCalendarCheck,
@@ -27,6 +28,32 @@ export default function StudentDashboard() {
 
   const studentId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+
+  useEffect(() => {
+  const userId = localStorage.getItem('userId');
+  console.log('📡 Connecting socket from teacher with userId:', userId);
+
+  if (!userId) return;
+
+  const socket = io(process.env.NEXT_PUBLIC_API_BASE_URL, {
+    query: { userId },
+  });
+
+  socket.on('connect', () => {
+    console.log('✅ Teacher socket connected');
+  });
+
+  socket.on('online-users', (users) => {
+    console.log('🟢 Online users list (in teacher):', users);
+  });
+
+  return () => {
+    socket.disconnect();
+    console.log('🔌 Teacher socket disconnected');
+  };
+}, []);
+
 
   useEffect(() => {
     setLoading(true);

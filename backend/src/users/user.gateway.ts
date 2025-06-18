@@ -11,11 +11,11 @@ import { Server, Socket } from 'socket.io';
 export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
 
-  private onlineUsers = new Set<string>(); // store user IDs
+  public onlineUsers = new Set<string>();
 
   handleConnection(client: Socket) {
     const userId = client.handshake.query.userId as string;
-
+    console.log('✅ Connected user:', userId); // 
     if (userId) {
       this.onlineUsers.add(userId);
       this.broadcastOnlineUsers();
@@ -24,7 +24,6 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleDisconnect(client: Socket) {
     const userId = client.handshake.query.userId as string;
-
     if (userId) {
       this.onlineUsers.delete(userId);
       this.broadcastOnlineUsers();
@@ -35,3 +34,5 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.emit('online-users', Array.from(this.onlineUsers));
   }
 }
+
+

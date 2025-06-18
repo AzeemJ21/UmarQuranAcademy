@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { io } from 'socket.io-client';
 import {
   FaTachometerAlt,
   FaClipboardCheck,
@@ -26,6 +27,31 @@ export default function TeacherDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [user, setUser] = useState('assigned-students');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+  const userId = localStorage.getItem('userId');
+  console.log('📡 Connecting socket from teacher with userId:', userId);
+
+  if (!userId) return;
+
+  const socket = io(process.env.NEXT_PUBLIC_API_BASE_URL, {
+    query: { userId },
+  });
+
+  socket.on('connect', () => {
+    console.log('✅ Teacher socket connected');
+  });
+
+  socket.on('online-users', (users) => {
+    console.log('🟢 Online users list (in teacher):', users);
+  });
+
+  return () => {
+    socket.disconnect();
+    console.log('🔌 Teacher socket disconnected');
+  };
+}, []);
+
 
   useEffect(() => {
     const fetchStudents = async () => {

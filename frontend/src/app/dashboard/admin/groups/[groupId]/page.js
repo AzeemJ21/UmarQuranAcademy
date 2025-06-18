@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation'; // 👈 Add useRouter
+import { useParams, useRouter } from 'next/navigation';
 import { connectSocket, getSocket, disconnectSocket } from '@/lib/socket';
 
 export default function AdminGroupChat() {
   const { groupId } = useParams();
-  const router = useRouter(); 
+  const router = useRouter();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const chatRef = useRef(null);
@@ -20,10 +20,23 @@ export default function AdminGroupChat() {
   };
   useEffect(scrollToBottom, [messages]);
 
+  const currentUserId = (() => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      console.log('✅ Decoded token:', payload); // Debug line
+      return payload._id || payload.sub || payload.userId;
+    } catch {
+      return null;
+    }
+  })();
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
 
+    // Fetch existing messages
     fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/groups/${groupId}/messages`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -36,11 +49,25 @@ export default function AdminGroupChat() {
       })
       .catch((err) => console.error('❌ Failed to fetch messages:', err));
 
+    // Connect socket
     const socket = connectSocket(token);
-    socket.emit('joinGroup', { groupId });
+
+    socket.on('connect', () => {
+      console.log('🌐 Socket connected:', socket.id);
+      socket.emit('joinGroup', { groupId });
+    });
+
+    socket.on('joinedGroup', (id) => {
+      console.log('✅ Joined group:', id);
+    });
 
     socket.on('groupMessage', (msg) => {
+      console.log('📩 Message received:', msg);
       setMessages((prev) => [...prev, msg]);
+    });
+
+    socket.on('error', (msg) => {
+      console.warn('⚠️ Socket error:', msg);
     });
 
     return () => {
@@ -60,25 +87,12 @@ export default function AdminGroupChat() {
   const formatTime = (iso) =>
     new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  const currentUserId = (() => {
-    const token = localStorage.getItem('token');
-    if (!token) return null;
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.userId || payload.sub;
-    } catch {
-      return null;
-    }
-  })();
-
   return (
     <div className="max-w-2xl mx-auto p-6 mt-8 bg-white rounded-xl shadow">
-      {/* Back Button */}
       <button
         onClick={() => router.back()}
         className="mb-4 inline-flex items-center gap-2 text-sm px-4 py-2 bg-green-100 text-green-800 rounded-full hover:bg-green-200 transition"
       >
-
         ← Back
       </button>
 
@@ -105,8 +119,7 @@ export default function AdminGroupChat() {
                 )}
                 <div>
                   <div
-                    className={`px-4 py-2 rounded-lg shadow-sm ${isMe ? 'bg-green-600 text-white' : 'bg-white border text-gray-800'
-                      }`}
+                    className={`px-4 py-2 rounded-lg shadow-sm ${isMe ? 'bg-green-600 text-white' : 'bg-white border text-gray-800'}`}
                   >
                     <div className="font-semibold">{msg.sender?.name || 'Unknown'}</div>
                     <div className="text-sm">{msg.text}</div>

@@ -15,7 +15,7 @@ export default function RichTextEditor({ value, onChange }) {
   return (
     <div className="border border-gray-300 rounded-md p-2 bg-white text-left">
       <Editor
-        apiKey={process.env.NEXT_PUBLIC_TINYKEY}
+        apiKey='hu96otceze23hkyx5vt67esqk5428oy0hk3e6b4v5utbztfs'
         onInit={(evt, editor) => {
           editorRef.current = editor;
         }}

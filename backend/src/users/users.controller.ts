@@ -19,7 +19,7 @@ import { Roles } from 'src/auth/roles.decorator';
 import { User, UserDocument } from './user.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { UserGateway } from './user.gateway'; // 👈 import gateway
+import { UserGateway } from './user.gateway'; 
 
 @Controller('user')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -27,7 +27,7 @@ export class UsersController {
   constructor(
     private readonly userService: UsersService,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    private readonly userGateway: UserGateway, // 👈 inject gateway
+    private readonly userGateway: UserGateway,
   ) {}
 
   @Get()
@@ -60,7 +60,7 @@ export class UsersController {
   @Get('my-students')
   @Roles('teacher')
   async getStudentsOfTeacher(@Req() req) {
-    const teacherId = req.user.userId; // 👈 changed from `sub` to `userId`
+    const teacherId = req.user.userId; 
     return this.userService.getStudentsOfTeacher(teacherId);
   }
 
@@ -82,7 +82,7 @@ export class UsersController {
 
   @Post('online-names')
 async getOnlineUserNames(@Body() body: { userIds: string[] }) {
-  console.log('📦 Received userIds:', body.userIds); // 👈 Add this
+  console.log('📦 Received userIds:', body.userIds); 
 
   if (!body.userIds || !Array.isArray(body.userIds)) {
     throw new BadRequestException('userIds must be an array');
@@ -90,7 +90,7 @@ async getOnlineUserNames(@Body() body: { userIds: string[] }) {
 
   const objectIds = body.userIds.map(id => new Types.ObjectId(id));
   const result = await this.userModel.find({ _id: { $in: objectIds } }, { name: 1 }).lean();
-  console.log('📤 Result:', result); // 👈 Add this
+  console.log('📤 Result:', result); 
   return result;
 }
 

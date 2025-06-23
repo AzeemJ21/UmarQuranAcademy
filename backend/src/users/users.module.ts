@@ -12,12 +12,12 @@ import { UserGateway } from './user.gateway';
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'supersecretkey', // apna JWT secret yahan rakhain
-      signOptions: { expiresIn: '1d' },                  // token expiration
+      secret: process.env.JWT_SECRET || 'supersecretkey', 
+      signOptions: { expiresIn: '1d' },                  
     }),
     MailModule,
   ],
-  providers: [UsersService, RolesGuard ,UserGateway ],  // RolesGuard yahan add karo
+  providers: [UsersService, RolesGuard ,UserGateway ],  
   controllers: [UsersController],
   exports: [UsersService,
     MongooseModule

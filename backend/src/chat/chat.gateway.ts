@@ -80,26 +80,50 @@ async handleJoinGroup(
   @SubscribeMessage('sendGroupMessage')
 async handleSendMessage(
   @ConnectedSocket() client: Socket,
-  @MessageBody() data: { groupId: string; text: string },
+  @MessageBody()
+  data: {
+    groupId: string;
+    text?: string;
+    fileUrl?: string;
+    fileName?: string;
+    fileType?: string;
+  },
 ) {
   const user = client.data.user;
-  const { groupId, text } = data;
+  const { groupId, text, fileUrl, fileName, fileType } = data;
 
   const userId = user._id || user.userId || user.userid || user.sub;
   const userRole = user.role;
 
-  console.log('🟢 Incoming message:', { groupId, text });
+  console.log('🟢 Incoming message:', { groupId, text, fileUrl, fileName, fileType });
   console.log('👤 User sending message:', userId, '| Role:', userRole);
 
+  // 🚫 Prevent completely empty messages
+  if (!text && !fileUrl) {
+    client.emit('error', 'Message must contain text or a file.');
+    return;
+  }
+
   try {
-    const message = await this.messageService.sendMessage(user, groupId, text);
+    const message = await this.messageService.sendMessage(
+      user,
+      groupId,
+      text,
+      fileUrl,
+      fileName,
+      fileType,
+    );
+
     const populatedMessage = await message.populate('sender', 'name role');
+
+    // ✅ Emit to group
     this.server.to(groupId).emit('groupMessage', populatedMessage);
   } catch (err) {
     console.error('❌ WebSocket sendMessage error:', err.message);
     client.emit('error', err.message);
   }
 }
+
 
 
 }

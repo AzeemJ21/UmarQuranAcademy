@@ -71,7 +71,7 @@ export default function SuperAdminGroupList() {
               </div>
 
               <Link
-                href={`/dashboard/super-admin/groups/${group._id}`}
+                href={`/chat/${group._id}`}
                 className="w-full sm:w-auto text-center bg-[#2E4D3B] text-white px-4 py-2 rounded-lg hover:bg-[#3e6e4a] text-sm"
               >
                 Open Chat

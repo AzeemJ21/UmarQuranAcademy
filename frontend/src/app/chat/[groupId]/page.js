@@ -11,6 +11,10 @@ export default function AdminGroupChat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [file, setFile] = useState(null);
+  const [recording, setRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const chatRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -20,6 +24,7 @@ export default function AdminGroupChat() {
       }
     }, 100);
   };
+
   useEffect(scrollToBottom, [messages]);
 
   const currentUserId = (() => {
@@ -37,7 +42,6 @@ export default function AdminGroupChat() {
     const token = localStorage.getItem('token');
     if (!token) return;
 
-    // Fetch messages
     fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/groups/${groupId}/messages`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -49,7 +53,6 @@ export default function AdminGroupChat() {
         setMessages(sorted);
       });
 
-    // Socket setup
     const socket = connectSocket(token);
     socket.emit('joinGroup', { groupId });
 
@@ -65,46 +68,75 @@ export default function AdminGroupChat() {
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
+    setAudioBlob(null); // reset audio if file selected
+  };
+
+  const handleStartRecording = async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const recorder = new MediaRecorder(stream);
+    let chunks = [];
+
+    recorder.ondataavailable = (e) => chunks.push(e.data);
+    recorder.onstop = () => {
+      const audio = new Blob(chunks, { type: 'audio/webm' });
+      setAudioBlob(audio);
+      setFile(null); // reset file if recording
+    };
+
+    recorder.start();
+    setMediaRecorder(recorder);
+    setRecording(true);
+  };
+
+  const handleStopRecording = () => {
+    if (mediaRecorder) {
+      mediaRecorder.stop();
+      setRecording(false);
+    }
   };
 
   const sendMessage = async () => {
     const socket = getSocket();
     const token = localStorage.getItem('token');
-    if (!socket || (!input.trim() && !file)) return;
+    if (!socket || (!input.trim() && !file && !audioBlob)) return;
 
     let fileData = {};
+    const payload = file || audioBlob;
 
-    if (file) {
-      const formData = new FormData();
-      formData.append('file', file);
+    try {
+      setUploading(true);
+      if (payload) {
+        const formData = new FormData();
+        formData.append('file', payload);
 
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/groups/${groupId}/messages/upload`,
-        {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/groups/${groupId}/messages/upload`, {
           method: 'POST',
           body: formData,
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-      const result = await res.json();
-      fileData = {
-        fileUrl: result.url,
-        fileName: result.originalName,
-        fileType: result.type,
-      };
+        const result = await res.json();
+        fileData = {
+          fileUrl: result.url,
+          fileName: result.originalName,
+          fileType: result.type,
+        };
+      }
+
+      socket.emit('sendGroupMessage', {
+        groupId,
+        text: input.trim(),
+        ...fileData,
+      });
+
+      setInput('');
+      setFile(null);
+      setAudioBlob(null);
+    } catch (err) {
+      console.error('Send failed', err);
+    } finally {
+      setUploading(false);
     }
-
-    socket.emit('sendGroupMessage', {
-      groupId,
-      text: input.trim(),
-      ...fileData,
-    });
-
-    setInput('');
-    setFile(null);
   };
 
   const formatTime = (iso) =>
@@ -113,21 +145,12 @@ export default function AdminGroupChat() {
   const renderMessageContent = (msg) => {
     if (msg.fileUrl) {
       if (msg.fileType?.startsWith('image/')) {
-        return <Image
-          src={msg.fileUrl}
-          alt={msg.fileName}
-          width={200}
-          height={200}
-          className="max-w-xs rounded" />;
+        return <Image src={msg.fileUrl} alt={msg.fileName} width={200} height={200} className="rounded shadow" />;
       } else if (msg.fileType?.startsWith('audio/')) {
         return <audio controls src={msg.fileUrl} className="mt-2 w-full" />;
       } else {
         return (
-          <a
-            href={msg.fileUrl}
-            download={msg.fileName}
-            className="text-blue-600 underline break-words"
-          >
+          <a href={msg.fileUrl} download={msg.fileName} className="text-blue-600 underline break-words">
             📎 {msg.fileName}
           </a>
         );
@@ -138,10 +161,7 @@ export default function AdminGroupChat() {
 
   return (
     <div className="max-w-2xl mx-auto p-6 mt-8 bg-white rounded-xl shadow">
-      <button
-        onClick={() => router.back()}
-        className="mb-4 inline-flex items-center gap-2 text-sm px-4 py-2 bg-green-100 text-green-800 rounded-full hover:bg-green-200 transition"
-      >
+      <button onClick={() => router.back()} className="mb-4 text-sm px-4 py-2 bg-green-100 text-green-800 rounded-full hover:bg-green-200 transition">
         ← Back
       </button>
 
@@ -154,26 +174,18 @@ export default function AdminGroupChat() {
           messages.map((msg) => {
             const isMe = msg.sender?._id === currentUserId;
             return (
-              <div
-                key={msg._id}
-                className={`flex items-end gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}
-              >
+              <div key={msg._id} className={`flex items-end gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
                 {!isMe && (
                   <div className="bg-green-700 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">
                     {msg.sender?.name?.[0]?.toUpperCase() || 'U'}
                   </div>
                 )}
                 <div>
-                  <div
-                    className={`px-4 py-2 rounded-lg shadow-sm max-w-xs break-words ${isMe ? 'bg-green-600 text-white' : 'bg-white border text-gray-800'
-                      }`}
-                  >
+                  <div className={`px-4 py-2 rounded-lg shadow-sm max-w-xs break-words ${isMe ? 'bg-green-600 text-white' : 'bg-white border text-gray-800'}`}>
                     <div className="font-semibold">{msg.sender?.name || 'Unknown'}</div>
                     {renderMessageContent(msg)}
                   </div>
-                  <div className="text-xs text-gray-500 mt-1 text-right">
-                    {formatTime(msg.createdAt)}
-                  </div>
+                  <div className="text-xs text-gray-500 mt-1 text-right">{formatTime(msg.createdAt)}</div>
                 </div>
               </div>
             );
@@ -181,27 +193,43 @@ export default function AdminGroupChat() {
         )}
       </div>
 
+      {/* File Preview and Loader */}
+      <div className="mt-2">
+        {file && file.type.startsWith('image/') && (
+          <div className="mb-2">
+            <p className="text-sm text-gray-600">📷 Preview:</p>
+            <Image
+              src={URL.createObjectURL(file)}
+              alt="Selected preview"
+              width={180}
+              height={180}
+              className="rounded-lg shadow-md border"
+            />
+          </div>
+        )}
+
+        {uploading && (
+          <p className="text-sm text-yellow-600 font-semibold flex items-center gap-2 mt-2">
+            <svg className="animate-spin h-4 w-4 text-yellow-600" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+            </svg>
+            Uploading file...
+          </p>
+        )}
+      </div>
+
       <div className="mt-4 flex gap-2 items-center">
-        {/* Attachment Icon */}
         <label className="cursor-pointer text-gray-600 hover:text-green-700">
           <input type="file" onChange={handleFileChange} className="hidden" />
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M16.88 3.549a5.5 5.5 0 00-7.78 0L3.551 9.1a5.5 5.5 0 007.778 7.778l6.36-6.36a2.5 2.5 0 00-3.535-3.535L9.1 10.465"
-            />
+          <svg className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.88 3.55a5.5 5.5 0 00-7.78 0L3.55 9.1a5.5 5.5 0 007.78 7.78l6.36-6.36a2.5 2.5 0 00-3.54-3.54L9.1 10.46" />
           </svg>
         </label>
 
-        {/* Text Input */}
+        {file && <p className="text-sm text-gray-600 truncate max-w-[150px]">{file.name}</p>}
+        {audioBlob && <p className="text-sm text-gray-600">(Recorded Voice)</p>}
+
         <input
           type="text"
           value={input}
@@ -210,37 +238,22 @@ export default function AdminGroupChat() {
           className="flex-1 px-4 py-3 border rounded-xl text-black"
         />
 
-        {/* Mic Icon (future voice message feature) */}
         <button
-          type="button"
-          className="text-gray-600 hover:text-green-700"
-          title="Voice message (coming soon)"
+          onClick={recording ? handleStopRecording : handleStartRecording}
+          className={`text-white px-3 py-2 rounded-full ${recording ? 'bg-red-600' : 'bg-green-700 hover:bg-green-800'}`}
+          title={recording ? 'Stop Recording' : 'Start Voice Message'}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 1v14m0 0c2.21 0 4-1.79 4-4h-4m0 4c-2.21 0-4-1.79-4-4h4m0 4v4"
-            />
-          </svg>
+          🎙
         </button>
 
-        {/* Send Button */}
         <button
           onClick={sendMessage}
-          className="bg-green-700 hover:bg-green-800 text-white px-4 py-3 rounded-full"
+          disabled={uploading}
+          className={`px-4 py-3 rounded-full text-white ${uploading ? 'bg-gray-400' : 'bg-green-700 hover:bg-green-800'}`}
         >
           ➤
         </button>
       </div>
-
     </div>
   );
 }

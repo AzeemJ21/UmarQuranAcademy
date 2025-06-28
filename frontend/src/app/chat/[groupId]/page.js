@@ -5,6 +5,59 @@ import { useParams, useRouter } from 'next/navigation';
 import { connectSocket, getSocket, disconnectSocket } from '@/lib/socket';
 import Image from 'next/image';
 
+function MessageContent({ msg }) {
+  const audioRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (audioRef.current.paused) {
+      audioRef.current.play();
+      setIsPlaying(true);
+    } else {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  useEffect(() => {
+    const current = audioRef.current;
+    if (!current) return;
+    const handleEnded = () => setIsPlaying(false);
+    current.addEventListener('ended', handleEnded);
+    return () => current.removeEventListener('ended', handleEnded);
+  }, []);
+
+  if (msg.fileUrl && msg.fileType?.startsWith('image/')) {
+    return <Image src={msg.fileUrl} alt={msg.fileName} width={200} height={200} className="rounded shadow" />;
+  }
+
+  if (msg.fileUrl && msg.fileType?.startsWith('audio/')) {
+    return (
+      <div
+        onClick={togglePlay}
+        className="cursor-pointer flex items-center gap-3 px-3 py-2 bg-green-100 rounded-md hover:bg-green-200"
+      >
+        <button className="bg-green-700 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm">
+          {isPlaying ? '⏸' : '▶️'}
+        </button>
+        <span className="text-sm text-gray-800 font-medium">Voice Message</span>
+        <audio ref={audioRef} src={msg.fileUrl} className="hidden" />
+      </div>
+    );
+  }
+
+  if (msg.fileUrl) {
+    return (
+      <a href={msg.fileUrl} download={msg.fileName} className="text-blue-600 underline break-words">
+        📎 {msg.fileName}
+      </a>
+    );
+  }
+
+  return <div className="text-sm">{msg.text}</div>;
+}
+
 export default function AdminGroupChat() {
   const { groupId } = useParams();
   const router = useRouter();
@@ -43,9 +96,7 @@ export default function AdminGroupChat() {
     if (!token) return;
 
     fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/groups/${groupId}/messages`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
       .then((data) => {
@@ -68,7 +119,7 @@ export default function AdminGroupChat() {
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
-    setAudioBlob(null); // reset audio if file selected
+    setAudioBlob(null);
   };
 
   const handleStartRecording = async () => {
@@ -80,7 +131,7 @@ export default function AdminGroupChat() {
     recorder.onstop = () => {
       const audio = new Blob(chunks, { type: 'audio/webm' });
       setAudioBlob(audio);
-      setFile(null); // reset file if recording
+      setFile(null);
     };
 
     recorder.start();
@@ -142,26 +193,12 @@ export default function AdminGroupChat() {
   const formatTime = (iso) =>
     new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  const renderMessageContent = (msg) => {
-    if (msg.fileUrl) {
-      if (msg.fileType?.startsWith('image/')) {
-        return <Image src={msg.fileUrl} alt={msg.fileName} width={200} height={200} className="rounded shadow" />;
-      } else if (msg.fileType?.startsWith('audio/')) {
-        return <audio controls src={msg.fileUrl} className="mt-2 w-full" />;
-      } else {
-        return (
-          <a href={msg.fileUrl} download={msg.fileName} className="text-blue-600 underline break-words">
-            📎 {msg.fileName}
-          </a>
-        );
-      }
-    }
-    return <div className="text-sm">{msg.text}</div>;
-  };
-
   return (
     <div className="max-w-2xl mx-auto p-6 mt-8 bg-white rounded-xl shadow">
-      <button onClick={() => router.back()} className="mb-4 text-sm px-4 py-2 bg-green-100 text-green-800 rounded-full hover:bg-green-200 transition">
+      <button
+        onClick={() => router.back()}
+        className="mb-4 text-sm px-4 py-2 bg-green-100 text-green-800 rounded-full hover:bg-green-200 transition"
+      >
         ← Back
       </button>
 
@@ -183,7 +220,7 @@ export default function AdminGroupChat() {
                 <div>
                   <div className={`px-4 py-2 rounded-lg shadow-sm max-w-xs break-words ${isMe ? 'bg-green-600 text-white' : 'bg-white border text-gray-800'}`}>
                     <div className="font-semibold">{msg.sender?.name || 'Unknown'}</div>
-                    {renderMessageContent(msg)}
+                    <MessageContent msg={msg} />
                   </div>
                   <div className="text-xs text-gray-500 mt-1 text-right">{formatTime(msg.createdAt)}</div>
                 </div>
@@ -193,29 +230,29 @@ export default function AdminGroupChat() {
         )}
       </div>
 
-      {/* File Preview and Loader */}
-      <div className="mt-2">
+      <div className="mt-4 space-y-3">
         {file && file.type.startsWith('image/') && (
-          <div className="mb-2">
-            <p className="text-sm text-gray-600">📷 Preview:</p>
-            <Image
-              src={URL.createObjectURL(file)}
-              alt="Selected preview"
-              width={180}
-              height={180}
-              className="rounded-lg shadow-md border"
-            />
+          <div className="relative w-fit">
+            <Image src={URL.createObjectURL(file)} alt="Preview" width={180} height={180} className="rounded-lg shadow border" />
+            <button onClick={() => setFile(null)} className="absolute top-1 right-1 bg-red-600 text-white rounded-full px-2 py-1 text-xs">✕</button>
+          </div>
+        )}
+
+        {audioBlob && (
+          <div className="relative bg-gray-100 border rounded-lg p-3 flex items-center gap-3">
+            <audio controls src={URL.createObjectURL(audioBlob)} />
+            <button onClick={() => setAudioBlob(null)} className="bg-red-600 text-white rounded-full px-2 py-1 text-xs">✕</button>
           </div>
         )}
 
         {uploading && (
-          <p className="text-sm text-yellow-600 font-semibold flex items-center gap-2 mt-2">
+          <div className="text-yellow-700 font-medium flex items-center gap-2">
             <svg className="animate-spin h-4 w-4 text-yellow-600" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
             </svg>
-            Uploading file...
-          </p>
+            Uploading...
+          </div>
         )}
       </div>
 
@@ -226,9 +263,6 @@ export default function AdminGroupChat() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M16.88 3.55a5.5 5.5 0 00-7.78 0L3.55 9.1a5.5 5.5 0 007.78 7.78l6.36-6.36a2.5 2.5 0 00-3.54-3.54L9.1 10.46" />
           </svg>
         </label>
-
-        {file && <p className="text-sm text-gray-600 truncate max-w-[150px]">{file.name}</p>}
-        {audioBlob && <p className="text-sm text-gray-600">(Recorded Voice)</p>}
 
         <input
           type="text"
@@ -241,7 +275,6 @@ export default function AdminGroupChat() {
         <button
           onClick={recording ? handleStopRecording : handleStartRecording}
           className={`text-white px-3 py-2 rounded-full ${recording ? 'bg-red-600' : 'bg-green-700 hover:bg-green-800'}`}
-          title={recording ? 'Stop Recording' : 'Start Voice Message'}
         >
           🎙
         </button>

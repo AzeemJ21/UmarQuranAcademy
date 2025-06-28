@@ -42,7 +42,7 @@ export class AuthController {
     const token = this.jwtService.sign(payload);
 
     return res.redirect(
-      `http://localhost:3000/dashboard/${user.role}?token=${token}&userId=${user._id}`,
+      `https://umarquranacademy-frontend.onrender.com/dashboard/${user.role}?token=${token}&userId=${user._id}`,
     );
   }
 

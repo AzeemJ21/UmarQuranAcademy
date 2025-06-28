@@ -70,7 +70,7 @@ export default function LoginPage() {
       <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
         <div className="flex justify-center mb-6">
           <Image src="/assets/logo.png" alt="Quran Academy Logo" width={160} height={60} priority />
-        </div>
+        </div>  
 
         <p className="text-center text-sm text-gray-500 mb-6">Login to your account</p>
 

@@ -1,5 +1,4 @@
 'use client';
-
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { io } from 'socket.io-client';
@@ -13,11 +12,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import UserGroupsList from '@/components/UserGroupsList';
 import useAuthRedirect from '@/hooks/useAuthRedirect';
- 
-
 
 export default function StudentDashboard() {
-   useAuthRedirect();
+  useAuthRedirect();
   const router = useRouter();
   const [active, setActive] = useState('homework');
   const [homework, setHomework] = useState([]);
@@ -26,35 +23,52 @@ export default function StudentDashboard() {
   const [error, setError] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const userId = urlParams.get('userId');
+
+    if (token && userId) {
+      localStorage.setItem('token', token);
+      localStorage.setItem('userId', userId);
+
+      // ✅ Clean URL (remove query params)
+      const urlWithoutParams = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, urlWithoutParams);
+    }
+  }, []);
+
+  // ✅ STEP 2: Get token/userId from localStorage
   const studentId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
-
+  // ✅ STEP 3: Setup Socket.IO
   useEffect(() => {
-  const userId = localStorage.getItem('userId');
-  console.log('📡 Connecting socket from teacher with userId:', userId);
+    const userId = localStorage.getItem('userId');
+    console.log('📡 Connecting socket from student with userId:', userId);
 
-  if (!userId) return;
+    if (!userId) return;
 
-  const socket = io(process.env.NEXT_PUBLIC_API_BASE_URL, {
-    query: { userId },
-  });
+    const socket = io(process.env.NEXT_PUBLIC_API_BASE_URL, {
+      auth: { token },        
+      query: { userId },
+    });
 
-  socket.on('connect', () => {
-    console.log('✅ Teacher socket connected');
-  });
+    socket.on('connect', () => {
+      console.log('✅ Student socket connected');
+    });
 
-  socket.on('online-users', (users) => {
-    console.log('🟢 Online users list (in teacher):', users);
-  });
+    socket.on('online-users', (users) => {
+      console.log('🟢 Online users list (in student):', users);
+    });
 
-  return () => {
-    socket.disconnect();
-    console.log('🔌 Teacher socket disconnected');
-  };
-}, []);
+    return () => {
+      socket.disconnect();
+      console.log('🔌 Student socket disconnected');
+    };
+  }, [token]);
 
-
+  // ✅ STEP 4: Fetch homework or attendance
   useEffect(() => {
     setLoading(true);
     setError('');
@@ -174,82 +188,68 @@ export default function StudentDashboard() {
       {/* Main content */}
       <main className="flex-1 overflow-y-auto p-10 bg-white text-[#2E4D3B]">
         <AnimatePresence mode="wait">
-         
-        {active === 'homework' && (
-                <motion.div
-                  key="homework"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.4 }}
-                >
-                  <h1 className="text-3xl font-bold mb-6 text-[#2E4D3B]">My Homework</h1>
+          {/* Homework */}
+          {active === 'homework' && (
+            <motion.div
+              key="homework"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
+            >
+              <h1 className="text-3xl font-bold mb-6 text-[#2E4D3B]">My Homework</h1>
 
-                  {loading ? (
-                    <p>Loading...</p>
-                  ) : error ? (
-                    <p className="text-red-500">{error}</p>
-                  ) : homework.length === 0 ? (
-                    <p className="text-gray-500">No homework assigned.</p>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full bg-white border rounded shadow">
-                        <thead className="bg-[#2E4D3B] text-white">
-                          <tr>
-                            
-                            <th className="text-left py-3 px-4">📘 Sabaq</th>
-                            <th className="text-left py-3 px-4">📗 Sabqi</th>
-                            <th className="text-left py-3 px-4">📕 Manzil</th>
-                            <th className="text-left py-3 px-4">📝 Comment</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {homework.map((task) => {
-                            let formattedDate = 'Invalid Date';
-                            if (task.createdAt && !isNaN(Date.parse(task.createdAt))) {
-                              formattedDate = new Date(task.createdAt).toLocaleDateString('en-US', {
-                                weekday: 'short',
-                                month: 'short',
-                                day: 'numeric',
-                              });
-                            }
-
-                            return (
-                              <tr key={task._id} className="border-t hover:bg-gray-50">
-                                
-                                <td className="py-3 px-4 prose prose-sm max-w-xs">
-                                  <div dangerouslySetInnerHTML={{ __html: task.sabaq }} />
-                                </td>
-                                <td className="py-3 px-4 prose prose-sm max-w-xs">
-                                  <div dangerouslySetInnerHTML={{ __html: task.sabqi }} />
-                                </td>
-                                <td className="py-3 px-4 prose prose-sm max-w-xs">
-                                  {task.manzil ? (
-                                    <div dangerouslySetInnerHTML={{ __html: task.manzil }} />
-                                  ) : (
-                                    <span className="text-gray-400">-</span>
-                                  )}
-                                </td>
-                                <td className="py-3 px-4 prose prose-sm max-w-xs">
-                                  {task.comment ? (
-                                    <div dangerouslySetInnerHTML={{ __html: task.comment }} />
-                                  ) : (
-                                    <span className="text-gray-400">-</span>
-                                  )}
-                                </td>
-                              </tr>
-                            );
-                          })}
-
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </motion.div>
+              {loading ? (
+                <p>Loading...</p>
+              ) : error ? (
+                <p className="text-red-500">{error}</p>
+              ) : homework.length === 0 ? (
+                <p className="text-gray-500">No homework assigned.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full bg-white border rounded shadow">
+                    <thead className="bg-[#2E4D3B] text-white">
+                      <tr>
+                        <th className="text-left py-3 px-4">📘 Sabaq</th>
+                        <th className="text-left py-3 px-4">📗 Sabqi</th>
+                        <th className="text-left py-3 px-4">📕 Manzil</th>
+                        <th className="text-left py-3 px-4">📝 Comment</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {homework.map((task) => (
+                        <tr key={task._id} className="border-t hover:bg-gray-50">
+                          <td className="py-3 px-4 prose prose-sm max-w-xs">
+                            <div dangerouslySetInnerHTML={{ __html: task.sabaq }} />
+                          </td>
+                          <td className="py-3 px-4 prose prose-sm max-w-xs">
+                            <div dangerouslySetInnerHTML={{ __html: task.sabqi }} />
+                          </td>
+                          <td className="py-3 px-4 prose prose-sm max-w-xs">
+                            {task.manzil ? (
+                              <div dangerouslySetInnerHTML={{ __html: task.manzil }} />
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 prose prose-sm max-w-xs">
+                            {task.comment ? (
+                              <div dangerouslySetInnerHTML={{ __html: task.comment }} />
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
-              
-              
-              {active === 'attendance' && (
+            </motion.div>
+          )}
+
+          {/* Attendance */}
+          {active === 'attendance' && (
             <motion.div
               key="attendance"
               initial={{ opacity: 0, y: 20 }}
@@ -287,6 +287,7 @@ export default function StudentDashboard() {
             </motion.div>
           )}
 
+          {/* Chat */}
           {active === 'chat' && (
             <motion.div
               key="chat"
@@ -301,7 +302,6 @@ export default function StudentDashboard() {
             </motion.div>
           )}
         </AnimatePresence>
-
       </main>
     </div>
   );

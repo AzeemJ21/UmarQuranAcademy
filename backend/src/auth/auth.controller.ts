@@ -31,7 +31,7 @@ export class AuthController {
   @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleAuth() {
-    // Redirect to Google login
+    
   }
 
   @Get('google/callback')

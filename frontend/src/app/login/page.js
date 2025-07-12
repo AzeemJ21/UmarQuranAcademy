@@ -61,7 +61,6 @@ export default function LoginPage() {
   };
 
   const loginWithGoogle = () => {
-    // This triggers Google OAuth via NestJS backend
     window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/google`;
   };
 

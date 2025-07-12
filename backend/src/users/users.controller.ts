@@ -11,6 +11,7 @@ import {
   Request,
   Post,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -19,7 +20,7 @@ import { Roles } from 'src/auth/roles.decorator';
 import { User, UserDocument } from './user.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { UserGateway } from './user.gateway'; 
+import { UserGateway } from './user.gateway';
 
 @Controller('user')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -33,19 +34,30 @@ export class UsersController {
   @Get()
   @Roles('super-admin')
   async getAllUsers(@Query('role') role?: string) {
-    return this.userService.findAll(role);
+    const users = await this.userService.findAll(role);
+    return { users };
+  }
+
+  @Get(':id')
+  @Roles('super-admin')
+  async getUserById(@Param('id') id: string) {
+    const user = await this.userService.findById(id);
+    if (!user) throw new NotFoundException('User not found');
+    return { user };
   }
 
   @Put(':id')
   @Roles('super-admin')
   async updateUser(@Param('id') id: string, @Body() body) {
-    return this.userService.update(id, body);
+    const user = await this.userService.update(id, body);
+    return { user };
   }
 
   @Delete(':id')
   @Roles('super-admin')
   async deleteUser(@Param('id') id: string) {
-    return this.userService.delete(id);
+    const result = await this.userService.delete(id);
+    return { message: result.message };
   }
 
   @Put('assign-students/:teacherId')
@@ -54,44 +66,44 @@ export class UsersController {
     @Param('teacherId') teacherId: string,
     @Body('studentIds') studentIds: string[],
   ) {
-    return this.userService.assignStudentsToTeacher(teacherId, studentIds);
+    const updatedTeacher = await this.userService.assignStudentsToTeacher(teacherId, studentIds);
+    return { teacher: updatedTeacher };
   }
 
   @Get('my-students')
   @Roles('teacher')
   async getStudentsOfTeacher(@Req() req) {
-    const teacherId = req.user.userId; 
-    return this.userService.getStudentsOfTeacher(teacherId);
+    const teacherId = req.user.userId;
+    const students = await this.userService.getStudentsOfTeacher(teacherId);
+    return { students };
   }
 
   @Get('teacher/:teacherId/students')
   async getStudentsByTeacher(@Param('teacherId') teacherId: string) {
-    return this.userService.getStudentsByTeacher(teacherId);
+    const students = await this.userService.getStudentsByTeacher(teacherId);
+    return { students };
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   getProfile(@Request() req) {
-    return req.user;
+    return { user: req.user };
   }
 
   @Get('students/:teacherId')
   async getAssignedStudents(@Param('teacherId') teacherId: string) {
-    return this.userService.getStudentsAssignedToTeacher(teacherId);
+    const students = await this.userService.getStudentsAssignedToTeacher(teacherId);
+    return { students };
   }
 
   @Post('online-names')
-async getOnlineUserNames(@Body() body: { userIds: string[] }) {
-  console.log('📦 Received userIds:', body.userIds); 
+  async getOnlineUserNames(@Body() body: { userIds: string[] }) {
+    if (!body.userIds || !Array.isArray(body.userIds)) {
+      throw new BadRequestException('userIds must be an array');
+    }
 
-  if (!body.userIds || !Array.isArray(body.userIds)) {
-    throw new BadRequestException('userIds must be an array');
+    const objectIds = body.userIds.map(id => new Types.ObjectId(id));
+    const result = await this.userModel.find({ _id: { $in: objectIds } }, { name: 1 }).lean();
+    return { users: result };
   }
-
-  const objectIds = body.userIds.map(id => new Types.ObjectId(id));
-  const result = await this.userModel.find({ _id: { $in: objectIds } }, { name: 1 }).lean();
-  console.log('📤 Result:', result); 
-  return result;
-}
-
 }

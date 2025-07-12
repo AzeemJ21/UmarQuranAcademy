@@ -6,8 +6,9 @@ const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { ss
 
 export default function AssignHomeworkForm() {
   const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(false); // ✅ NEW
   const [homework, setHomework] = useState({
-    teacher: '',   // teacher id from localStorage
+    teacher: '',
     student: '',
     date: '',
     sabaq: '',
@@ -18,10 +19,7 @@ export default function AssignHomeworkForm() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const teacherId = localStorage.getItem('userId'); // assuming teacherId stored here after login
-
-  console.log('Token:', token);
-  console.log('TeacherId:', teacherId);
+    const teacherId = localStorage.getItem('userId');
 
     if (!token || !teacherId) {
       alert('Login required or invalid teacher data.');
@@ -64,56 +62,55 @@ export default function AssignHomeworkForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true); // ✅ start loading
 
     const token = localStorage.getItem('token');
 
-    const res = await fetch('${process.env.NEXT_PUBLIC_API_BASE_URL}/homework', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(homework),
-    });
-
-    if (res.ok) {
-      alert('✅ Homework assigned successfully!');
-      setHomework({
-        teacher: homework.teacher, // keep teacher ID intact
-        student: '',
-        date: '',
-        sabaq: '',
-        sabqi: '',
-        manzil: '',
-        comment: '',
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/homework`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...homework,
+          student: [homework.student],
+        }),
       });
-      setStudents([]);
-    } else {
-      alert('❌ Failed to assign homework');
+
+      if (res.ok) {
+        alert('✅ Homework assigned successfully!');
+        setHomework({
+          teacher: homework.teacher,
+          student: '',
+          date: '',
+          sabaq: '',
+          sabqi: '',
+          manzil: '',
+          comment: '',
+        });
+      } else {
+        alert('❌ Failed to assign homework');
+      }
+    } catch (err) {
+      console.error('Submission error:', err);
+      alert('❌ Something went wrong while assigning homework.');
+    } finally {
+      setLoading(false); // ✅ stop loading
     }
   };
 
   return (
     <div className="max-w-2xl mx-auto mt-10 bg-white p-8 rounded-xl shadow-lg">
       <div className="flex justify-center mb-6">
-        <Image
-          src="/assets/logo.png"
-          alt="Quram Academy Logo"
-          width={160}
-          height={60}
-          priority
-        />
+        <Image src="/assets/logo.png" alt="Quram Academy Logo" width={160} height={60} priority />
       </div>
 
-      <h2 className="text-2xl font-bold text-[#2E4D3B] text-center mb-2">
-        Assign Homework
-      </h2>
-      <p className="text-center text-sm text-gray-500 mb-6">
-        Assign Quran homework to your students
-      </p>
+      <h2 className="text-2xl font-bold text-[#2E4D3B] text-center mb-2">Assign Homework</h2>
+      <p className="text-center text-sm text-gray-500 mb-6">Assign Quran homework to your students</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Student Dropdown */}
         <div>
           <label className="block mb-1 font-medium text-gray-700">Select Student</label>
           <select
@@ -132,7 +129,6 @@ export default function AssignHomeworkForm() {
           </select>
         </div>
 
-        {/* Date */}
         <div>
           <label className="block mb-1 font-medium text-gray-700">Date</label>
           <input
@@ -145,7 +141,6 @@ export default function AssignHomeworkForm() {
           />
         </div>
 
-         {/* Rich Text Fields */}
         {['sabaq', 'sabqi', 'manzil', 'comment'].map((field) => (
           <div key={field}>
             <label className="block mb-1 font-medium capitalize text-gray-700 text-sm sm:text-base">
@@ -153,18 +148,19 @@ export default function AssignHomeworkForm() {
             </label>
             <RichTextEditor
               value={homework[field]}
-              onChange={(val) =>
-                setHomework((prev) => ({ ...prev, [field]: val }))
-              }
+              onChange={(val) => setHomework((prev) => ({ ...prev, [field]: val }))}
             />
           </div>
         ))}
 
         <button
           type="submit"
-          className="w-full bg-[#2E4D3B] hover:bg-[#3f6b4a] text-white font-semibold py-2 rounded-lg transition"
+          disabled={loading} // ✅ disable while loading
+          className={`w-full font-semibold py-2 rounded-lg transition ${
+            loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#2E4D3B] hover:bg-[#3f6b4a] text-white'
+          }`}
         >
-          Assign Homework
+          {loading ? 'Assigning...' : 'Assign Homework'}
         </button>
       </form>
     </div>

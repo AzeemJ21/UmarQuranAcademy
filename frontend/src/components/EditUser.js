@@ -1,7 +1,13 @@
 'use client';
-import Image from 'next/image';
+
 import { useEffect, useState } from 'react';
-import { AiOutlineUser, AiOutlineMail, AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
+import Image from 'next/image';
+import {
+  AiOutlineUser,
+  AiOutlineMail,
+  AiOutlineEye,
+  AiOutlineEyeInvisible,
+} from 'react-icons/ai';
 import { RiLockPasswordLine } from 'react-icons/ri';
 
 export default function EditUserModal({ isOpen, onClose, userId, onUserUpdated }) {
@@ -14,25 +20,27 @@ export default function EditUserModal({ isOpen, onClose, userId, onUserUpdated }
     if (!isOpen || !userId) return;
 
     setLoading(true);
-    setUser(null); // reset user before fetch
-
     fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/${userId}`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
     })
       .then((res) => res.json())
       .then((data) => {
-        setUser({ ...data, password: '' }); // prefill with empty password
-        setLoading(false);
+        if (data?.user) {
+          setUser({ ...data.user, password: '' }); // Prefill values
+        } else {
+          alert('User not found');
+        }
       })
-      .catch(() => {
-        setLoading(false);
-        alert('Failed to load user data.');
-      });
+      .catch(() => alert('Failed to fetch user'))
+      .finally(() => setLoading(false));
   }, [isOpen, userId]);
 
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!user) return;
+
     setSaving(true);
 
     try {
@@ -48,14 +56,12 @@ export default function EditUserModal({ isOpen, onClose, userId, onUserUpdated }
         body: JSON.stringify(payload),
       });
 
-      if (res.ok) {
-        onUserUpdated();
-        onClose();
-      } else {
-        alert('Update failed!');
-      }
-    } catch {
-      alert('Error while updating');
+      if (!res.ok) throw new Error('Update failed');
+
+      onUserUpdated?.();
+      onClose();
+    } catch (err) {
+      alert('Error updating user');
     } finally {
       setSaving(false);
     }
@@ -65,100 +71,107 @@ export default function EditUserModal({ isOpen, onClose, userId, onUserUpdated }
 
   return (
     <>
-      <div onClick={onClose} className="fixed inset-0 bg-opacity-40 backdrop-blur-sm z-40"></div>
+      <div onClick={onClose} className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40" />
 
       <div className="fixed inset-0 flex items-center justify-center z-50 px-4">
-        <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md mx-auto text-black relative">
-          <div className="flex justify-center mb-6">
-            <Image src="/assets/logo.png" alt="Quram Academy Logo" width={160} height={60} priority />
+        <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md relative">
+          <div className="flex justify-center mb-4">
+            <Image src="/assets/logo.png" alt="Logo" width={160} height={60} priority />
           </div>
-          <h2 className="text-2xl font-bold text-center text-[#2E4D3B] mb-2">Edit User</h2>
-          <p className="text-center text-sm text-gray-500 mb-4">Update user details below</p>
 
-          {loading && <p className="text-center">Loading user data...</p>}
+          <h2 className="text-2xl font-bold text-center text-[#2E4D3B]">Edit User</h2>
+          <p className="text-center text-sm text-gray-500 mb-4">Update user details</p>
 
-          {!loading && user && (
-            <form onSubmit={handleUpdate} className="space-y-4" key={userId}>
+          {loading ? (
+            <p className="text-center">Loading...</p>
+          ) : user ? (
+            <form onSubmit={handleUpdate} className="space-y-4">
+              {/* Name */}
               <div className="relative">
                 <AiOutlineUser className="absolute top-3 left-3 text-gray-500" />
                 <input
                   type="text"
                   name="name"
-                  placeholder="Full Name"
                   value={user.name ?? ''}
                   onChange={(e) => setUser({ ...user, name: e.target.value })}
                   required
+                  placeholder="Full Name"
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2E4D3B]"
                 />
               </div>
 
+              {/* Email */}
               <div className="relative">
                 <AiOutlineMail className="absolute top-3 left-3 text-gray-500" />
                 <input
                   type="email"
                   name="email"
-                  placeholder="Email Address"
                   value={user.email ?? ''}
                   onChange={(e) => setUser({ ...user, email: e.target.value })}
                   required
+                  placeholder="Email Address"
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2E4D3B]"
                 />
               </div>
 
+              {/* Password */}
               <div className="relative">
                 <RiLockPasswordLine className="absolute top-3 left-3 text-gray-500" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="password"
-                  placeholder="Change Password (leave blank to keep)"
                   value={user.password ?? ''}
                   onChange={(e) => setUser({ ...user, password: e.target.value })}
+                  placeholder="Change password (optional)"
                   className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2E4D3B]"
                 />
                 <div
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute top-3 right-3 text-2xl text-gray-500 cursor-pointer"
+                  className="absolute top-3 right-3 text-xl text-gray-500 cursor-pointer"
                 >
                   {showPassword ? <AiOutlineEyeInvisible /> : <AiOutlineEye />}
                 </div>
               </div>
 
+              {/* Role */}
               <select
                 name="role"
                 value={user.role ?? ''}
                 onChange={(e) => setUser({ ...user, role: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2E4D3B]"
                 required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2E4D3B]"
               >
                 <option value="">Select Role</option>
                 <option value="student">Student</option>
-                <option value="super-admin">Super Admin</option>
-                <option value="admin">Admin</option>
                 <option value="teacher">Teacher</option>
+                <option value="admin">Admin</option>
+                <option value="super-admin">Super Admin</option>
               </select>
 
-              <div className="flex justify-between">
+              {/* Buttons */}
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={onClose}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
                   disabled={saving}
-                  className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
+                  className="flex-1 bg-[#2E4D3B] hover:bg-[#3f6b4a] text-white font-semibold py-2 rounded-lg"
                   disabled={saving}
-                  className="w-full bg-[#2E4D3B] hover:bg-[#3f6b4a] text-white font-semibold py-2 rounded-lg"
                 >
                   {saving ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>
+          ) : (
+            <p className="text-red-500 text-center">User not found</p>
           )}
 
-          {!loading && !user && <p className="text-red-400 text-center">User not found</p>}
-
+          {/* Close button top right */}
           <button
             onClick={onClose}
             className="absolute top-3 right-3 text-gray-600 hover:text-gray-900 text-xl font-bold"

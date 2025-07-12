@@ -1,4 +1,5 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -10,7 +11,6 @@ import {
   FaCalendarCheck,
   FaCalendarAlt,
   FaCog,
-  FaSignOutAlt
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import StatCard from '@/components/StatCard';
@@ -38,7 +38,7 @@ export default function SuperAdminDashboard() {
   const [filterRole, setFilterRole] = useState('all');
   const [search, setSearch] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editUserId, setEditUserId] = useState([]);
+  const [editUserId, setEditUserId] = useState(null); // fixed from []
 
   const fetchUsers = async () => {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user`, {
@@ -48,7 +48,8 @@ export default function SuperAdminDashboard() {
     });
     if (res.ok) {
       const data = await res.json();
-      setUsers(data);
+      const usersArray = Array.isArray(data) ? data : data.users ?? [];
+      setUsers(usersArray);
     }
   };
 
@@ -57,11 +58,12 @@ export default function SuperAdminDashboard() {
   }, []);
 
   const getFilteredUsers = () => {
+    if (!Array.isArray(users)) return [];
     return users.filter((u) => {
       const matchRole = filterRole === 'all' || u.role === filterRole;
       const matchSearch =
-        u.name.toLowerCase().includes(search.toLowerCase()) ||
-        u.email.toLowerCase().includes(search.toLowerCase());
+        u.name?.toLowerCase().includes(search.toLowerCase()) ||
+        u.email?.toLowerCase().includes(search.toLowerCase());
       return matchRole && matchSearch;
     });
   };
@@ -100,14 +102,11 @@ export default function SuperAdminDashboard() {
     { name: 'Check Homework', icon: <FaClipboardCheck color="#3F51B5" />, key: 'assignedHomework' },
     { name: 'Mark Attendance', icon: <FaCalendarCheck color="#E91E63" />, key: 'mark-attendance' },
     { name: 'Check Attendance', icon: <FaCalendarAlt color="#00BCD4" />, key: 'check-attendance' },
-    { name: 'Create Group', icon: <FaCog color="#795548" />, key: 'craete-group' },
+    { name: 'Create Group', icon: <FaCog color="#795548" />, key: 'create-group' }, // fixed typo
     { name: 'Online User', icon: <FaCalendarAlt color="#00BCD4" />, key: 'onlineuser' },
     { name: 'Group List', icon: <FaCalendarAlt color="#00BCD4" />, key: 'group-list' },
     { name: 'Settings', icon: <FaCog color="#795548" />, key: 'settings' },
-    
   ];
-
-
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -117,7 +116,6 @@ export default function SuperAdminDashboard() {
 
   return (
     <div className="flex h-screen overflow-hidden relative">
-      {/* Hamburger Button for Mobile */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
         className="absolute top-4 left-4 z-50 md:hidden text-white bg-[#2E4D3B] p-2 rounded-md shadow"
@@ -125,7 +123,6 @@ export default function SuperAdminDashboard() {
         ☰
       </button>
 
-      {/* Sidebar */}
       <aside
         className={`
         fixed top-0 left-0 h-full z-40 bg-[#2E4D3B] text-white shadow-xl flex flex-col p-6 overflow-y-auto transition-transform duration-300
@@ -158,14 +155,15 @@ export default function SuperAdminDashboard() {
               key={item.key}
               onClick={() => {
                 setActive(item.key);
-                if (window.innerWidth < 768) setIsSidebarOpen(false); // Auto-close on mobile
+                if (window.innerWidth < 768) setIsSidebarOpen(false);
               }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.98 }}
-              className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 ${active === item.key
-                ? 'bg-white text-[#2E4D3B] font-semibold shadow'
-                : 'hover:bg-[#3b624e] hover:text-white'
-                }`}
+              className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 ${
+                active === item.key
+                  ? 'bg-white text-[#2E4D3B] font-semibold shadow'
+                  : 'hover:bg-[#3b624e] hover:text-white'
+              }`}
             >
               {item.icon}
               <span>{item.name}</span>
@@ -174,7 +172,6 @@ export default function SuperAdminDashboard() {
         </nav>
       </aside>
 
-      {/* Backdrop when sidebar open (mobile only) */}
       {isSidebarOpen && (
         <div
           onClick={() => setIsSidebarOpen(false)}
@@ -182,7 +179,6 @@ export default function SuperAdminDashboard() {
         />
       )}
 
-      {/* Main content */}
       <main className="flex-1 overflow-y-auto p-10 bg-white text-[#2E4D3B]">
         <AnimatePresence mode="wait">
           {active === 'dashboard' && (
@@ -193,14 +189,12 @@ export default function SuperAdminDashboard() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.4 }}
             >
-              <div className='flex justify-between items-center'>
-                <div className="mb-10">
+              <div className="flex justify-between items-center mb-10">
+                <div>
                   <h1 className="text-3xl sm:text-4xl font-bold text-[#2E4D3B] mb-2">Welcome, Super Admin!</h1>
                   <p className="text-gray-600">Manage your platform from here.</p>
                 </div>
-
-                {/* Logout button hidden on mobile */}
-                <div className="mb-10 hidden sm:block">
+                <div className="hidden sm:block">
                   <button
                     onClick={handleLogout}
                     className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow transition"
@@ -209,7 +203,6 @@ export default function SuperAdminDashboard() {
                   </button>
                 </div>
               </div>
-
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-12">
                 <StatCard title="Total Users" value={totalUsers.toString()} />
@@ -292,85 +285,29 @@ export default function SuperAdminDashboard() {
                 </table>
               </div>
 
-              <EditUserModal
-                isOpen={showEditModal}
-                onClose={closeEditModal}
-                userId={editUserId}
-                onUserUpdated={fetchUsers}
-              />
+              {/* 👇 Modal */}
+              {showEditModal && (
+                <EditUserModal
+                  isOpen={showEditModal}
+                  onClose={closeEditModal}
+                  userId={editUserId}
+                  onUserUpdated={fetchUsers}
+                />
+              )}
             </motion.div>
           )}
 
-
-          {active === 'register' && (
-            <motion.div
-              key="register"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.4 }}
-              className="grid md:grid-cols-2 gap-8"
-            >
-              <RegisterForm />
-            </motion.div>
-          )}
-
-          {active === 'assignStudents' && (
-            <motion.div key="assignStudents" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }} className="bg-white rounded-lg shadow-lg">
-              <AssignStudent />
-            </motion.div>
-          )}
-
-          {active === 'assignHomework' && (
-            <motion.div key="assignHomework" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }} className="bg-white rounded-lg shadow-lg">
-              <AssignHomeworkForm />
-            </motion.div>
-          )}
-
-          {active === 'assignedHomework' && (
-            <motion.div key="assignedHomework" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }} className="bg-white rounded-lg shadow-lg">
-              <HomeworkDashboard />
-            </motion.div>
-          )}
-
-          {active === 'mark-attendance' && (
-            <motion.div key="mark-attendance" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }} className="bg-white rounded-lg shadow-lg">
-              <AttendanceForm />
-            </motion.div>
-          )}
-
-          {active === 'check-attendance' && (
-            <motion.div key="check-attendance" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }} className="bg-white rounded-lg shadow-lg">
-              <AttendancePage />
-            </motion.div>
-          )}
-
-          {active === 'craete-group' && (
-            <motion.div key="craete-group" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }} className="bg-white rounded-lg shadow-lg">
-              <CreateGroupForm />
-            </motion.div>
-          )}
-
-          {active === 'group-list' && (
-            <motion.div key="group-list" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }} className="bg-white rounded-lg shadow-lg">
-              <SuperAdminGroupList/>
-            </motion.div>
-          )}
-
-          {active === 'settings' && (
-            <motion.p key="settings" className="text-xl text-[#2E4D3B]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
-              <LogoutButton />
-              </motion.p>
-          )}
-
-          {active === 'onlineuser' && (
-            <motion.p key="onlineuser" className="text-xl text-[#2E4D3B]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
-              <OnlineUsers/>
-              </motion.p>
-          )}
-
-
-
+          {/* Other tabs */}
+          {active === 'register' && <RegisterForm />}
+          {active === 'assignStudents' && <AssignStudent />}
+          {active === 'assignHomework' && <AssignHomeworkForm />}
+          {active === 'assignedHomework' && <HomeworkDashboard />}
+          {active === 'mark-attendance' && <AttendanceForm />}
+          {active === 'check-attendance' && <AttendancePage />}
+          {active === 'create-group' && <CreateGroupForm />}
+          {active === 'group-list' && <SuperAdminGroupList />}
+          {active === 'onlineuser' && <OnlineUsers />}
+          {active === 'settings' && <LogoutButton />}
         </AnimatePresence>
       </main>
     </div>

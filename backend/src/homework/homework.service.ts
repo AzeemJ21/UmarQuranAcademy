@@ -14,22 +14,33 @@ export class HomeworkService {
   ) {}
 
   async createHomework(data: any) {
-  const newHomework = new this.homeworkModel(data);
-  const savedHomework = await newHomework.save();
+  let studentIds = data.student;
 
-  // Ensure data.students is an array of ObjectIds or strings
-  if (!data.student || !Array.isArray(data.student)) {
-    throw new Error('Invalid or missing students array');
+  if (!studentIds) {
+    throw new Error('Missing student data');
   }
 
-  // Fetch students by IDs
+  // ✅ Convert to array if it's a single string
+  if (!Array.isArray(studentIds)) {
+    studentIds = [studentIds];
+  }
+
+  // Save homework
+  const newHomework = new this.homeworkModel({
+    ...data,
+    student: studentIds, // save as array
+  });
+
+  const savedHomework = await newHomework.save();
+
+  // Get all student records
   const students = await this.userModel.find({
-    _id: { $in: data.student },
+    _id: { $in: studentIds },
   });
 
   // Send email to each student
   for (const student of students) {
-    if (!student.email) continue; // skip if email is missing
+    if (!student.email) continue;
 
     await this.mailService.sendMail(
       student.email,
@@ -48,6 +59,7 @@ export class HomeworkService {
 
   return savedHomework;
 }
+
 
   async getAllHomeworks() {
     return this.homeworkModel.find().populate('teacher').populate('student');
